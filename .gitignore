@@ -1,0 +1,18 @@
+/VS Project/C_Frost/C_Frost/include/rapidjson/
+/VS Project/C_Frost/C_Frost/include/frost/gen/
+/VS Project/C_Frost/C_Frost/include/frost/allincludes.hh
+/VS Project/C_Frost/C_Frost/include/frost/functionlist.hh
+/VS Project/C_Frost/C_Frost/functionlist.cc
+/VS Project/C_Frost/C_Frost/gen/
+/VS Project/C_Frost/C_Frost/res/
+/VS Project/C_Frost/Debug/
+/VS Project/C_Frost/C_Frost/Debug/
+/VS Project/C_Frost/.vs/
+/VS Project/C_Frost/C_Frost.VC.db
+/VS Project/C_Frost/C_Frost.VC.VC.opendb
+
+/Matlab/RabbitExample/local/
+/Matlab/RabbitExample/gen/
+/Matlab/RabbitExample/rabbit.spc
+
+*.asv
