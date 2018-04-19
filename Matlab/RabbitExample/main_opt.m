@@ -103,14 +103,14 @@ if COMPILE
         'ForceExport', true,...
         'StackVariable', true,...
         'BuildMex', false,...
-        'TemplateFile', 'C:\Users\oharib\Documents\GitHub\frost-dev\example\rabbit\templateMin.c',...
-        'TemplateHeader', 'C:\Users\oharib\Documents\GitHub\frost-dev\example\rabbit\templateMin.h');
+        'TemplateFile', fullfile(frost_c.getRootPath, 'templateMin.c'),...
+        'TemplateHeader', fullfile(frost_c.getRootPath, 'templateMin.h'));
     compileObjective(nlp,[],[],[export_path, 'c/'], [],...
         'ForceExport', true,...
         'StackVariable', true,...
         'BuildMex', false,...
-        'TemplateFile', 'C:\Users\oharib\Documents\GitHub\frost-dev\example\rabbit\templateMin.c',...
-        'TemplateHeader', 'C:\Users\oharib\Documents\GitHub\frost-dev\example\rabbit\templateMin.h');
+        'TemplateFile', fullfile(frost_c.getRootPath, 'templateMin.c'),...
+        'TemplateHeader', fullfile(frost_c.getRootPath, 'templateMin.h'));
     movefile([export_path, 'c/*hh'], [export_path, 'c/include/frost/gen/']);
 end
 
@@ -122,7 +122,20 @@ addpath(genpath(export_path));
 nlp.update;
 solver = IpoptApplication(nlp);
 
-% Run Optimization
+%% Create files depending on solver
+if ~exist(fullfile(frost_c.getRootPath, 'local'))
+    mkdir(fullfile(frost_c.getRootPath, 'local'));
+end
+if ~exist(fullfile(frost_c.getRootPath, 'local', 'code'))
+    mkdir(fullfile(frost_c.getRootPath, 'local', 'code'));
+end
+
+[funcs, nums] = frost_c.getAllFuncs(solver);
+frost_c.createFunctionListHeader(funcs, nums);
+frost_c.createIncludeHeader(funcs, nums);
+frost_c.createJSONFile(solver, funcs, nums);
+
+%% Run Optimization
 tic
 % old = load('x0');
 % [sol, info] = optimize(solver, old.sol);

@@ -1,7 +1,7 @@
 function createJSONFile(solver, funcs, nums)
     obj = frost_c.generateProblemStructure(solver, funcs, nums);
     
-    savejson('', obj, fullfile('local', 'code', 'data.json'));
+    savejson('', obj, fullfile(frost_c.getRootPath(), 'local', 'code', 'data.json'));
     
 %     text = jsonencode(obj);
 %     
