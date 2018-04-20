@@ -3,7 +3,7 @@ clear; clc;
 cur = pwd;
 addpath(genpath(cur));
 
-addpath('../../');
+addpath('/home/ayonga/Projects/frost');
 frost_addpath;
 export_path = fullfile(cur, 'gen/');
 % if load_path is empty, it will not load any expression.

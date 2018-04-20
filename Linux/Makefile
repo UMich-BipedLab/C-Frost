@@ -1,11 +1,12 @@
 CXX      := g++
-CXXFLAGS := -Wall -Wno-unused-variable -Wno-unused-value
-LDFLAGS  := -lm
+CXXFLAGS := -Wall -Wno-unused-variable -Wno-unused-value -O3 -pipe -DNDEBUG -Wparentheses -Wreturn-type -Wcast-qual -Wall -Wpointer-arith -Wwrite-strings -Wconversion -Wno-unknown-pragmas -Wno-long-long -fopenmp  -DIPOPT_BUILD
+LDFLAGS  := -Wl,--rpath -Wl,/usr/local/lib
 BUILD    := ./build
 OBJ_DIR  := $(BUILD)/objects
 APP_DIR  := $(BUILD)/apps
 TARGET   := program
-INCLUDE  := -Iinclude/
+INCLUDE  := -Iinclude/ `PKG_CONFIG_PATH=/usr/local//lib64/pkgconfig:/usr/local//lib/pkgconfig:/usr/local//share/pkgconfig:/opt/ros/kinetic/lib/pkgconfig:/opt/ros/kinetic/lib/x86_64-linux-gnu/pkgconfig:/opt/intel/opencl: pkg-config --cflags ipopt` $(ADDINCFLAGS)
+LIBS = `PKG_CONFIG_PATH=/usr/local//lib64/pkgconfig:/usr/local//lib/pkgconfig:/usr/local//share/pkgconfig:/opt/ros/kinetic/lib/pkgconfig:/opt/ros/kinetic/lib/x86_64-linux-gnu/pkgconfig:/opt/intel/opencl: pkg-config --libs ipopt`
 SRCS     :=                     \
    $(wildcard src/gen/*.cc)	\
    $(wildcard src/*.cc)         \
@@ -26,7 +27,7 @@ $(OBJ_DIR)/%.o: %.cc
 
 $(APP_DIR)/$(TARGET): $(OBJECTS)
 	@mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) $(INCLUDE) $(LDFLAGS) $(OBJECTS) -o $@
+	$(CXX) $(CXXFLAGS) $(INCLUDE) $(LDFLAGS) $(OBJECTS) -o $@ $(LIBS)
 
 .PHONY: all build clean debug release
 
