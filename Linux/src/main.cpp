@@ -30,8 +30,11 @@ int main()
 
   rapidjson::Document init_document;
   getDocument(init_document, "res/init.json");
-  assert(document.IsArray());
-  double *x0 = new [document.Size()];
+  assert(init_document.IsArray());
+  double *x0 = new double[init_document.Size()];
+
+  for (int i=0; i<init_document.Size(); i++)
+    x0[i] = init_document[i].GetDouble();
 
   // Create a new instance of your nlp
   //  (use a SmartPtr, not raw)
@@ -53,7 +56,6 @@ int main()
   // Note: The following choices are only examples, they might not be
   //       suitable for your optimization problem.
   app->Options()->SetNumericValue("tol", 1e-7);
-  app->Options()->SetNumericValue("max_iter", 1000);
   app->Options()->SetStringValue("mu_strategy", "adaptive");
   app->Options()->SetStringValue("output_file", "ipopt.out");
   app->Options()->SetStringValue("linear_solver", "ma57");

@@ -8,100 +8,100 @@
 #include <string>
 
 using namespace Ipopt;
+using namespace std;
 
 frost::FROST_SOLVER::FROST_SOLVER(rapidjson::Document &document, const double *x0)
 {
-	int nVar = document["Variable"]["dimVars"].GetInt();
-	int nConst = document["Constraint"]["numFuncs"].GetInt();
-	int nOut = document["Constraint"]["Dimension"].GetInt();
-	int nJOutConst = document["Constraint"]["nnzJac"].GetInt();
-	int nJOutObj = document["Objective"]["nnzJac"].GetInt();
+  int nVar = document["Variable"]["dimVars"].GetInt();
+  int nConst = document["Constraint"]["numFuncs"].GetInt();
+  int nOut = document["Constraint"]["Dimension"].GetInt();
+  int nJOutConst = document["Constraint"]["nnzJac"].GetInt();
+  int nJOutObj = document["Objective"]["nnzJac"].GetInt();
 
-	in = new double[nJOutConst];
-	out = new double[nJOutConst];
-	x0 = new double[nVar];
+  this->in = new double[nJOutConst];
+  this->out = new double[nJOutConst];
+  this->x0 = new double[nVar];
 
-  for
-	  i(int i = 0; i < nVar; i++)
-	  {
-		  this->x0[i] = x0[i];
-	  }
+  for (int i = 0; i < nVar; i++)
+    {
+      this->x0[i] = x0[i];
+    }
 
   this->document = &document;
 }
 
 frost::FROST_SOLVER::~FROST_SOLVER()
 {
-	delete[] in;
-	delete[] out;
-	delete[] x0;
+  delete[] in;
+  delete[] out;
+  delete[] x0;
 }
 
 bool frost::FROST_SOLVER::get_nlp_info(Index &n, Index &m, Index &nnz_jac_g,
-									   Index &nnz_h_lag, IndexStyleEnum &index_style)
+                                       Index &nnz_h_lag, IndexStyleEnum &index_style)
 {
-	int nVar = (*document)["Variable"]["dimVars"].GetInt();
-	int nOut = (*document)["Constraint"]["Dimension"].GetInt();
-	int nJOut = (*document)["Constraint"]["nnzJac"].GetInt();
+  int nVar = (*document)["Variable"]["dimVars"].GetInt();
+  int nOut = (*document)["Constraint"]["Dimension"].GetInt();
+  int nJOut = (*document)["Constraint"]["nnzJac"].GetInt();
 
-	n = nVar;
+  n = nVar;
 
-	m = nOut;
+  m = nOut;
 
-	nnz_jac_g = nJOut;
+  nnz_jac_g = nJOut;
 
-	index_style = TNLP::C_STYLE;
+  index_style = TNLP::C_STYLE;
 
-	return true;
+  return true;
 }
 
 
 // returns the variable bounds
 bool frost::FROST_SOLVER::get_bounds_info(Index n, Number *x_l, Number *x_u,
-										  Index m, Number *g_l, Number *g_u)
+                                          Index m, Number *g_l, Number *g_u)
 {
-	int nVar = (*document)["Variable"]["dimVars"].GetInt();
-	int nOut = (*document)["Constraint"]["Dimension"].GetInt();
+  int nVar = (*document)["Variable"]["dimVars"].GetInt();
+  int nOut = (*document)["Constraint"]["Dimension"].GetInt();
 
-	assert(n == nVar);
-	assert(m == nOut);
+  assert(n == nVar);
+  assert(m == nOut);
 
-	for (int i = 0; i < nVar; i++)
-	{
-		x_l[i] = (*document)["Variable"]["lb"][i].GetDouble();
-		x_u[i] = (*document)["Variable"]["ub"][i].GetDouble();
-	}
+  for (int i = 0; i < nVar; i++)
+    {
+      x_l[i] = (*document)["Variable"]["lb"][i].GetDouble();
+      x_u[i] = (*document)["Variable"]["ub"][i].GetDouble();
+    }
 
-	for (int i = 0; i < nOut; i++)
-	{
-		g_l[i] = (*document)["Constraint"]["LowerBound"][i].GetDouble();
-		g_u[i] = (*document)["Constraint"]["UpperBound"][i].GetDouble();
-	}
+  for (int i = 0; i < nOut; i++)
+    {
+      g_l[i] = (*document)["Constraint"]["LowerBound"][i].GetDouble();
+      g_u[i] = (*document)["Constraint"]["UpperBound"][i].GetDouble();
+    }
 
-	return true;
+  return true;
 }
 
 // returns the initial point for the problem
 bool frost::FROST_SOLVER::get_starting_point(Index n, bool init_x, Number *x,
-											 bool init_z, Number *z_L, Number *z_U,
-											 Index m, bool init_lambda,
-											 Number *lambda)
+                                             bool init_z, Number *z_L, Number *z_U,
+                                             Index m, bool init_lambda,
+                                             Number *lambda)
 {
-	// Here, we assume we only have starting values for x, if you code
-	// your own NLP, you can provide starting values for the dual variables
-	// if you wish
-	assert(init_x == true);
-	assert(init_z == false);
-	assert(init_lambda == false);
+  // Here, we assume we only have starting values for x, if you code
+  // your own NLP, you can provide starting values for the dual variables
+  // if you wish
+  assert(init_x == true);
+  assert(init_z == false);
+  assert(init_lambda == false);
 
-	int nVar = (*document)["Variable"]["dimVars"].GetInt();
+  int nVar = (*document)["Variable"]["dimVars"].GetInt();
 
-	for (int i = 0; i < nVar; i++)
-	{
-		x[i] = x0[i];
-	}
+  for (int i = 0; i < nVar; i++)
+    {
+      x[i] = x0[i];
+    }
 
-	return true;
+  return true;
 }
 
 
@@ -211,6 +211,7 @@ bool frost::FROST_SOLVER::eval_f(Index n, const Number* x, bool new_x, Number& o
   int nConst = (*document)["Objective"]["numFuncs"].GetInt();
   int nOut = (*document)["Objective"]["Dimension"].GetInt();
 
+
   assert(n == nVar);
 
   obj_value = 0;
@@ -265,6 +266,7 @@ bool frost::FROST_SOLVER::eval_f(Index n, const Number* x, bool new_x, Number& o
           obj_value += out[0];
         }
     }
+
 
   return true;
 }
@@ -411,8 +413,8 @@ bool frost::FROST_SOLVER::eval_grad_f(Index n, const Number* x, bool new_x, Numb
           numConst = (*document)["Objective"]["nzJacIndices"][i].Size();
           for (int j = 0; j < numConst; j++)
             {
-              int fIdx = (*document)["Objective"]["nzJacIndices"][i][j].GetInt() - 1;
-              int index = (*document)["Objective"]["nzJacCols"][i][fIdx].GetInt() - 1;
+              int flIdx = (*document)["Objective"]["nzJacIndices"][i][j].GetInt() - 1;
+              int index = (*document)["Objective"]["nzJacCols"][flIdx].GetInt() - 1;
               grad_f[index] += out[j];
 
             }
@@ -420,11 +422,12 @@ bool frost::FROST_SOLVER::eval_grad_f(Index n, const Number* x, bool new_x, Numb
       else if ((*document)["Objective"]["FuncIndices"][i].IsNull() == false)
         {
           numConst = 1;
-          int fIdx = (*document)["Objective"]["nzJacIndices"][i].GetInt() - 1;
-          int index = (*document)["Objective"]["nzJacCols"][i][fIdx].GetInt() - 1;
+          int flIdx = (*document)["Objective"]["nzJacIndices"][i].GetInt() - 1;
+          int index = (*document)["Objective"]["nzJacCols"][flIdx].GetInt() - 1;
           grad_f[index] += out[0];
         }
     }
+
 
   return true;
 }

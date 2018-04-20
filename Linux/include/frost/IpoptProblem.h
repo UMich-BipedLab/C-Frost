@@ -10,7 +10,7 @@ namespace frost {
   class FROST_SOLVER : public TNLP
   {
   public:
-    FROST_SOLVER(rapidjson::Document &document);
+    FROST_SOLVER(rapidjson::Document &document, const double *x0);
     virtual ~FROST_SOLVER();
 
     virtual bool get_nlp_info(Index& n, Index& m, Index& nnz_jac_g,
