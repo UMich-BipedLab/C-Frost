@@ -50,6 +50,7 @@ namespace frost {
   public:
     rapidjson::Document *document;
     double *in, *out;
+    double *x0;
   };
 }
 

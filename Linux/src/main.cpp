@@ -28,13 +28,19 @@ int main()
   assert(document.HasMember("Variable"));
   assert(document.HasMember("Options"));
 
+  rapidjson::Document init_document;
+  getDocument(init_document, "res/init.json");
+  assert(document.IsArray());
+  double *x0 = new [document.Size()];
+
   // Create a new instance of your nlp
   //  (use a SmartPtr, not raw)
   //frost::FROST_SOLVER solver(document);
 
   // Create a new instance of your nlp
   //  (use a SmartPtr, not raw)
-  SmartPtr<TNLP> mynlp = new  frost::FROST_SOLVER(document);
+  SmartPtr<TNLP> mynlp = new  frost::FROST_SOLVER(document, x0);
+  delete []x0;
 
   // Create a new instance of IpoptApplication
   //  (use a SmartPtr, not raw)
