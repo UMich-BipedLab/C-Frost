@@ -123,6 +123,12 @@ function [obj] = generateProblemStructure(solver, funcs, nums)
     
     % Variable
     [dimVars, lb, ub] = getVarInfo(solver.Nlp);
+    if iscolumn(lb)
+        lb = lb';
+    end
+    if iscolumn(ub)
+        ub = ub';
+    end
     
     obj.Variable = struct();
     obj.Variable.dimVars = dimVars;

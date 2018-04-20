@@ -135,6 +135,12 @@ frost_c.createFunctionListHeader(funcs, nums);
 frost_c.createIncludeHeader(funcs, nums);
 frost_c.createJSONFile(solver, funcs, nums);
 
+x0 = getInitialGuess(solver.Nlp, solver.Options.initialguess);
+if iscolumn(x0)
+    x0 = x0';
+end
+savejson('', x0, fullfile('local', 'code', 'init_condition.json'))
+
 %% Run Optimization
 tic
 % old = load('x0');
