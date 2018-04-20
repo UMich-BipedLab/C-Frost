@@ -47,9 +47,12 @@ int main()
   // Note: The following choices are only examples, they might not be
   //       suitable for your optimization problem.
   app->Options()->SetNumericValue("tol", 1e-7);
+  app->Options()->SetNumericValue("max_iter", 1000);
   app->Options()->SetStringValue("mu_strategy", "adaptive");
   app->Options()->SetStringValue("output_file", "ipopt.out");
-  app->Options()->SetStringValue("linear_solver", "ma97");
+  app->Options()->SetStringValue("linear_solver", "ma57");
+  app->Options()->SetStringValue("hessian_approximation", "limited-memory");
+  app->Options()->SetStringValue("limited_memory_update_type", "bfgs");
   // The following overwrites the default name (ipopt.opt) of the
   // options file
   // app->Options()->SetStringValue("option_file_name", "hs071.opt");

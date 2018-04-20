@@ -53,6 +53,8 @@ bool frost::FROST_SOLVER::get_bounds_info(Index n, Number* x_l, Number* x_u,
                                           Index m, Number* g_l, Number* g_u)
 {
   int nVar = (*document)["Variable"]["dimVars"].GetInt();
+
+
   int nOut = (*document)["Constraint"]["Dimension"].GetInt();
 
   assert(n == nVar);
@@ -425,7 +427,14 @@ bool frost::FROST_SOLVER::eval_grad_f(Index n, const Number* x, bool new_x, Numb
 }
 
 
-
+//return the structure or values of the hessian
+bool frost::FROST_SOLVER::eval_h(Index n, const Number* x, bool new_x,
+                       Number obj_factor, Index m, const Number* lambda,
+                       bool new_lambda, Index nele_hess, Index* iRow,
+                       Index* jCol, Number* values)
+{
+  return true;
+}
 
 /*void frost::IpoptConstraint(double *c, const double *x, const rapidjson::Document &document) {
   int nConst = document["Constraint"]["numFuncs"].GetInt();
