@@ -281,7 +281,7 @@ bool frost::FROST_SOLVER::eval_jac_g(Index n, const Number* x, bool new_x,
 
   assert(n == nVar);
   assert(m == nOut);
-  assert(n_ele_jac == nJOut);
+  assert(nele_jac == nJOut);
 
   if (values == NULL)
     {
