@@ -130,8 +130,8 @@ if GENERATE_C
     frost_c.createDataFile(solver, funcs, data_path);
     frost_c.createInitialGuess(solver, data_path);
     
-    copyfile('MakefileSample', 'c_code/Makefile');
-    copyfile('default-ipopt.opt', 'c_code/res/ipopt.opt');
+    copyfile('CMakeLists.txt', 'c_code/CMakeLists.txt');
+    copyfile('default-ipopt.opt', 'c_code/ipopt.opt');
 end
 
 %% Optimize

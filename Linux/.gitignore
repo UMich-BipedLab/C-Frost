@@ -13,3 +13,6 @@ program
 res/
 
 .metadata/
+.cquery_cached_index/
+.projectile
+.clang-format

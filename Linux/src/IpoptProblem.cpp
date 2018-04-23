@@ -278,6 +278,7 @@ bool frost::FROST_SOLVER::eval_jac_g(Index n, const Number* x, bool new_x,
   int nVar = (*document)["Variable"]["dimVars"].GetInt();
   int nConst = (*document)["Constraint"]["numFuncs"].GetInt();
   int nJOut = (*document)["Constraint"]["nnzJac"].GetInt();
+  int nOut = (*document)["Constraint"]["Dimension"].GetInt();
 
   assert(n == nVar);
   assert(m == nOut);
