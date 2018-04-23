@@ -3,15 +3,17 @@ clear; clc;
 cur = pwd;
 addpath(genpath(cur));
 
-addpath('/home/ayonga/Projects/frost');
+addpath('C:\Users\oharib\Documents\GitHub\frost-dev');
 frost_addpath;
 export_path = fullfile(cur, 'gen/');
+addpath('../');
 % if load_path is empty, it will not load any expression.
 % if non-empty and assigned valid directory, then symbolic expressions will
 % be loaded  from the MX binary files from the given directory.
 load_path = [];%fullfile(cur, 'gen/sym');
 delay_set = false;
 COMPILE = true;
+GENERATE_C = true;
 
 % Load model
 rabbit = RABBIT('urdf/five_link_walker.urdf');
@@ -84,34 +86,9 @@ if COMPILE
     if ~exist([export_path, 'opt/'])
         mkdir([export_path, 'opt/'])
     end
-    if ~exist([export_path, 'c/'])
-        mkdir([export_path, 'c/'])
-    end
-    if ~exist([export_path, 'c/include/'])
-        mkdir([export_path, 'c/include/'])
-    end
-    if ~exist([export_path, 'c/include/frost/'])
-        mkdir([export_path, 'c/include/frost/'])
-    end
-    if ~exist([export_path, 'c/include/frost/gen/'])
-        mkdir([export_path, 'c/include/frost/gen/'])
-    end
     rabbit.ExportKinematics([export_path,'kinematics/']);
     compileConstraint(nlp,[],[],[export_path, 'opt/']);
     compileObjective(nlp,[],[],[export_path, 'opt/']);
-    compileConstraint(nlp,[],[],[export_path, 'c/'], [],...
-        'ForceExport', true,...
-        'StackVariable', true,...
-        'BuildMex', false,...
-        'TemplateFile', fullfile(frost_c.getRootPath, 'templateMin.c'),...
-        'TemplateHeader', fullfile(frost_c.getRootPath, 'templateMin.h'));
-    compileObjective(nlp,[],[],[export_path, 'c/'], [],...
-        'ForceExport', true,...
-        'StackVariable', true,...
-        'BuildMex', false,...
-        'TemplateFile', fullfile(frost_c.getRootPath, 'templateMin.c'),...
-        'TemplateHeader', fullfile(frost_c.getRootPath, 'templateMin.h'));
-    movefile([export_path, 'c/*hh'], [export_path, 'c/include/frost/gen/']);
 end
 
 % Example constraint removal
@@ -123,23 +100,42 @@ nlp.update;
 solver = IpoptApplication(nlp);
 
 %% Create files depending on solver
-if ~exist(fullfile(frost_c.getRootPath, 'local'))
-    mkdir(fullfile(frost_c.getRootPath, 'local'));
+if GENERATE_C
+    c_code_path = 'c_code';
+    src_path = 'c_code/src';
+    src_gen_path = 'c_code/src/gen';
+    include_dir = 'c_code/include';
+    data_path = 'c_code/res';
+    
+    if exist(c_code_path, 'dir')
+        mkdir(c_code_path);
+    end
+    if exist(src_path, 'dir')
+        mkdir(src_path);
+    end
+    if exist(src_gen_path, 'dir')
+        mkdir(src_gen_path);
+    end
+    if exist(include_dir, 'dir')
+        mkdir(include_dir);
+    end
+    if exist(data_path, 'dir')
+        mkdir(data_path);
+    end
+    
+    [funcs] = frost_c.getAllFuncs(solver);
+    frost_c.createFunctionListHeader(funcs, src_path, include_dir);
+    frost_c.createIncludeHeader(funcs, include_dir);
+    if COMPILE
+        frost_c.createConstraints(nlp,[],[],src_gen_path, include_dir)
+        frost_c.createConstraints(nlp,[],[],src_gen_path, include_dir)
+    end
+    frost_c.createDataFile(solver, funcs, data_path);
+    frost_c.createInitialGuess(solver, data_path);
+    
+    copyfile('MakefileSample', 'c_code/Makefile');
+    copyfile('default-ipopt.opt', 'c_code/res/ipopt.opt');
 end
-if ~exist(fullfile(frost_c.getRootPath, 'local', 'code'))
-    mkdir(fullfile(frost_c.getRootPath, 'local', 'code'));
-end
-
-[funcs, nums] = frost_c.getAllFuncs(solver);
-frost_c.createFunctionListHeader(funcs, nums);
-frost_c.createIncludeHeader(funcs, nums);
-frost_c.createJSONFile(solver, funcs, nums);
-
-x0 = getInitialGuess(solver.Nlp, solver.Options.initialguess);
-if iscolumn(x0)
-    x0 = x0';
-end
-savejson('', x0, fullfile('local', 'code', 'init_condition.json'))
 
 %% Run Optimization
 tic

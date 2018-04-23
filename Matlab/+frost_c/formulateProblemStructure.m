@@ -1,4 +1,4 @@
-function [obj] = generateProblemStructure(solver, funcs, nums)
+function [obj] = formulateProblemStructure(solver, funcs)
     obj = struct();
     
     % Constraints
@@ -54,9 +54,11 @@ function [obj] = generateProblemStructure(solver, funcs, nums)
     if iscolumn(obj.Constraint.nzJacIndices)
         obj.Constraint.nzJacIndices = obj.Constraint.nzJacIndices';
     end
+    obj.Constraint.LowerBound(obj.Constraint.LowerBound == -Inf) = -1e6;
     if iscolumn(obj.Constraint.LowerBound)
         obj.Constraint.LowerBound = obj.Constraint.LowerBound';
     end
+    obj.Constraint.UpperBound(obj.Constraint.UpperBound == Inf) = 1e6;
     if iscolumn(obj.Constraint.UpperBound)
         obj.Constraint.UpperBound = obj.Constraint.UpperBound';
     end
@@ -90,7 +92,7 @@ function [obj] = generateProblemStructure(solver, funcs, nums)
     
     obj.Objective.AuxData = cell(1, solver.Objective.numFuncs);
     for i = 1:solver.Objective.numFuncs
-        obj.Objective.AuxData{i} = zeros(0, 1);
+        obj.Objective.AuxData{i} = [];
         for j = 1:length(solver.Objective.AuxData{i})
             row = solver.Objective.AuxData{i}{j};
             if iscolumn(row)
@@ -114,12 +116,8 @@ function [obj] = generateProblemStructure(solver, funcs, nums)
     if iscolumn(obj.Objective.nzJacIndices)
         obj.Objective.nzJacIndices = obj.Objective.nzJacIndices';
     end
-    if iscolumn(obj.Objective.LowerBound)
-        obj.Objective.LowerBound = obj.Objective.LowerBound';
-    end
-    if iscolumn(obj.Objective.UpperBound)
-        obj.Objective.UpperBound = obj.Objective.UpperBound';
-    end
+    obj.Objective = rmfield(obj.Objective, 'LowerBound');
+    obj.Objective = rmfield(obj.Objective, 'UpperBound');
     
     % Variable
     [dimVars, lb, ub] = getVarInfo(solver.Nlp);
@@ -132,7 +130,9 @@ function [obj] = generateProblemStructure(solver, funcs, nums)
     
     obj.Variable = struct();
     obj.Variable.dimVars = dimVars;
+    lb(lb == -Inf) = -1e6;
     obj.Variable.lb = lb;
+    ub(ub == Inf) = 1e6;
     obj.Variable.ub = ub;
     
     % Options

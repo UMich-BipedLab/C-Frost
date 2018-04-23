@@ -2,13 +2,20 @@ clear
 
 cur = fileparts(mfilename('fullpath'));
 
+addpath('C:\Users\oharib\Documents\GitHub\frost-dev');
+frost_addpath;
+
 export_path = fullfile(cur, 'export/');
 if ~exist(export_path,'dir')
     mkdir(export_path);
 end
 addpath(genpath(cur));
+addpath('../');
 
+GENERATE_C = true;
+COMPILE = true;
 
+%% Creating Problem
 nlp = NonlinearProgram('nlp051');
 nlp.setOption('DerivativeLevel',1);
 
@@ -64,68 +71,22 @@ constrs(3) = NlpFunction('Name','f_constr3','Type','nonlinear',...
     'SymFun',f_constr3,'DepVariables',[x_var;y_var],'lb',0,'ub',0);
 
 
-
 nlp = regConstraint(nlp,constrs);
 
-%%
+%% Compiling Constraints
 nlp.update;
 if ~exist([export_path, 'opt/'])
     mkdir([export_path, 'opt/'])
 end
-if ~exist([export_path, 'c/'])
-    mkdir([export_path, 'c/'])
+if COMPILE
+    nlp.compileConstraint([export_path, 'opt/']);
+    nlp.compileObjective([export_path, 'opt/']);
 end
-if ~exist([export_path, 'c/include/'])
-    mkdir([export_path, 'c/include/'])
-end
-if ~exist([export_path, 'c/include/frost/'])
-    mkdir([export_path, 'c/include/frost/'])
-end
-if ~exist([export_path, 'c/include/frost/gen/'])
-    mkdir([export_path, 'c/include/frost/gen/'])
-end
-nlp.compileConstraint([export_path, 'opt/']);
-nlp.compileObjective([export_path, 'opt/']);
 
-compileConstraint(nlp,[export_path, 'c/'],...
-    'ForceExport', true,...
-    'StackVariable', true,...
-    'BuildMex', false,...
-    'TemplateFile', fullfile(frost_c.getRootPath, 'templateMin.c'),...
-    'TemplateHeader', fullfile(frost_c.getRootPath, 'templateMin.h'));
-compileObjective(nlp,[export_path, 'c/'],...
-    'ForceExport', true,...
-    'StackVariable', true,...
-    'BuildMex', false,...
-    'TemplateFile', fullfile(frost_c.getRootPath, 'templateMin.c'),...
-    'TemplateHeader', fullfile(frost_c.getRootPath, 'templateMin.h'));
-movefile([export_path, 'c/*hh'], [export_path, 'c/include/frost/gen/']);
-
-%%
+%% Createing the Solver Problem
 addpath(genpath(export_path));
 nlp.update;
-solver = IpoptApplication(nlp);
 
-%% Create files depending on solver
-if ~exist(fullfile(frost_c.getRootPath, 'local'))
-    mkdir(fullfile(frost_c.getRootPath, 'local'));
-end
-if ~exist(fullfile(frost_c.getRootPath, 'local', 'code'))
-    mkdir(fullfile(frost_c.getRootPath, 'local', 'code'));
-end
-
-[funcs, nums] = frost_c.getAllFuncs(solver);
-frost_c.createFunctionListHeader(funcs, nums);
-frost_c.createIncludeHeader(funcs, nums);
-frost_c.createJSONFile(solver, funcs, nums);
-
-x0 = getInitialGuess(solver.Nlp, solver.Options.initialguess);
-if iscolumn(x0)
-    x0 = x0';
-end
-savejson('', x0, fullfile('local', 'code', 'init.json'))
-
-%% 
 extraOpts.fixed_variable_treatment = 'RELAX_BOUNDS';
 extraOpts.point_perturbation_radius = 0;
 extraOpts.jac_c_constant        = 'yes';
@@ -133,11 +94,45 @@ extraOpts.hessian_approximation = 'limited-memory';
 extraOpts.derivative_test = 'first-order';
 extraOpts.derivative_test_perturbation = 1e-7;
 
-solverApp = IpoptApplication(nlp, extraOpts);
-[sol, info] = optimize(solverApp);
+solver = IpoptApplication(nlp, extraOpts);
 
-solverApp = SnoptApplication(nlp);
-nlp051.spc = which('nlp051.spc');
-snspec(nlp051.spc);
+%% Create files depending on solver
+if GENERATE_C
+    c_code_path = 'c_code';
+    src_path = 'c_code/src';
+    src_gen_path = 'c_code/src/gen';
+    include_dir = 'c_code/include';
+    data_path = 'c_code/res';
+    
+    if exist(c_code_path, 'dir')
+        mkdir(c_code_path);
+    end
+    if exist(src_path, 'dir')
+        mkdir(src_path);
+    end
+    if exist(src_gen_path, 'dir')
+        mkdir(src_gen_path);
+    end
+    if exist(include_dir, 'dir')
+        mkdir(include_dir);
+    end
+    if exist(data_path, 'dir')
+        mkdir(data_path);
+    end
+    
+    [funcs] = frost_c.getAllFuncs(solver);
+    frost_c.createFunctionListHeader(funcs, src_path, include_dir);
+    frost_c.createIncludeHeader(funcs, include_dir);
+    if COMPILE
+        frost_c.createConstraints(nlp,[],[],src_gen_path, include_dir)
+        frost_c.createConstraints(nlp,[],[],src_gen_path, include_dir)
+    end
+    frost_c.createDataFile(solver, funcs, data_path);
+    frost_c.createInitialGuess(solver, data_path);
+    
+    copyfile('MakefileSample', 'c_code/Makefile');
+    copyfile('default-ipopt.opt', 'c_code/res/ipopt.opt');
+end
 
-[sol, info] = optimize(solverApp);
+%% Optimize
+[sol, info] = optimize(solver);

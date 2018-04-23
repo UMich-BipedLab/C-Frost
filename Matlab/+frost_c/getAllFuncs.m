@@ -1,4 +1,4 @@
-function [funcs, nums] = getAllFuncs(solver)
+function [funcs] = getAllFuncs(solver)
     import java.util.TreeMap
     
     map = TreeMap;
