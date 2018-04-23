@@ -1,3 +1,5 @@
+C_FROST_ROOT_PATH := ../../../
+
 CXX      := g++
 CXXFLAGS := -Wall -Wno-unused-variable -Wno-unused-value -O3 -pipe -DNDEBUG -Wparentheses -Wreturn-type -Wcast-qual -Wall -Wpointer-arith -Wwrite-strings -Wconversion -Wno-unknown-pragmas -Wno-long-long -fopenmp  -DIPOPT_BUILD
 LDFLAGS  := -Wl,--rpath -Wl,/usr/local/lib
@@ -5,12 +7,13 @@ BUILD    := ./build
 OBJ_DIR  := $(BUILD)/objects
 APP_DIR  := $(BUILD)/apps
 TARGET   := program
-INCLUDE  := -Iinclude/ `PKG_CONFIG_PATH=/usr/local//lib64/pkgconfig:/usr/local//lib/pkgconfig:/usr/local//share/pkgconfig:/opt/ros/kinetic/lib/pkgconfig:/opt/ros/kinetic/lib/x86_64-linux-gnu/pkgconfig:/opt/intel/opencl: pkg-config --cflags ipopt` $(ADDINCFLAGS)
+INCLUDE  := -Iinclude/ -I$(C_FROST_ROOT_PATH)/Linux/include/ `PKG_CONFIG_PATH=/usr/local//lib64/pkgconfig:/usr/local//lib/pkgconfig:/usr/local//share/pkgconfig:/opt/ros/kinetic/lib/pkgconfig:/opt/ros/kinetic/lib/x86_64-linux-gnu/pkgconfig:/opt/intel/opencl: pkg-config --cflags ipopt` $(ADDINCFLAGS)
 LIBS = `PKG_CONFIG_PATH=/usr/local//lib64/pkgconfig:/usr/local//lib/pkgconfig:/usr/local//share/pkgconfig:/opt/ros/kinetic/lib/pkgconfig:/opt/ros/kinetic/lib/x86_64-linux-gnu/pkgconfig:/opt/intel/opencl: pkg-config --libs ipopt`
 SRCS     :=                     \
    $(wildcard src/gen/*.cc)	\
    $(wildcard src/*.cc)         \
-   $(wildcard src/*.cpp)	\
+   $(C_FROST_ROOT_PATH)/Linux/src/IpoptProblem.cpp	\
+   $(C_FROST_ROOT_PATH)/Linux/src/main.cpp	\
 
 OBJECTS := $(SRCS:%.cc=$(OBJ_DIR)/%.o)
 #OBJECTS := $(foreach program,$(SRCS),$(OBJ_DIR)/$(program).o)
