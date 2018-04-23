@@ -125,7 +125,7 @@ if GENERATE_C
     frost_c.createIncludeHeader(funcs, include_dir);
     if COMPILE
         frost_c.createConstraints(nlp,[],[],src_gen_path, include_dir)
-        frost_c.createConstraints(nlp,[],[],src_gen_path, include_dir)
+        frost_c.createObjectives(nlp,[],[],src_gen_path, include_dir)
     end
     frost_c.createDataFile(solver, funcs, data_path);
     frost_c.createInitialGuess(solver, data_path);
