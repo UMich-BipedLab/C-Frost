@@ -115,27 +115,29 @@ void frost::FROST_SOLVER::finalize_solution(SolverReturn status,
   // here is where we would store the solution to variables, or write to a file, etc
   // so we could use the solution.
 
-  // For this example, we write the solution to the console
-  std::cout << std::endl << std::endl << "Solution of the primal variables, x" << std::endl;
-  for (Index i=0; i<n; i++) {
-    std::cout << "x[" << i << "] = " << x[i] << std::endl;
-  }
+  rapidjson::Document document;
 
-  std::cout << std::endl << std::endl << "Solution of the bound multipliers, z_L and z_U" << std::endl;
-  for (Index i=0; i<n; i++) {
-    std::cout << "z_L[" << i << "] = " << z_L[i] << std::endl;
-  }
-  for (Index i=0; i<n; i++) {
-    std::cout << "z_U[" << i << "] = " << z_U[i] << std::endl;
-  }
+  // For this example, we write the solution to the console
+  // std::cout << std::endl << std::endl << "Solution of the primal variables, x" << std::endl;
+  // for (Index i=0; i<n; i++) {
+  //   std::cout << "x[" << i << "] = " << x[i] << std::endl;
+  // }
+
+  // std::cout << std::endl << std::endl << "Solution of the bound multipliers, z_L and z_U" << std::endl;
+  // for (Index i=0; i<n; i++) {
+  //   std::cout << "z_L[" << i << "] = " << z_L[i] << std::endl;
+  // }
+  // for (Index i=0; i<n; i++) {
+  //   std::cout << "z_U[" << i << "] = " << z_U[i] << std::endl;
+  // }
 
   std::cout << std::endl << std::endl << "Objective value" << std::endl;
   std::cout << "f(x*) = " << obj_value << std::endl;
 
-  std::cout << std::endl << "Final value of the constraints:" << std::endl;
-  for (Index i=0; i<m ;i++) {
-    std::cout << "g(" << i << ") = " << g[i] << std::endl;
-  }
+  // std::cout << std::endl << "Final value of the constraints:" << std::endl;
+  // for (Index i=0; i<m ;i++) {
+  //   std::cout << "g(" << i << ") = " << g[i] << std::endl;
+  // }
 }
 
 

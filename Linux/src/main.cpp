@@ -38,7 +38,7 @@ int main()
 
   // Create a new instance of your nlp
   //  (use a SmartPtr, not raw)
-  //frost::FROST_SOLVER solver(document);
+  //frost::FROST_SOLVER solver(document, x0);
 
   // Create a new instance of your nlp
   //  (use a SmartPtr, not raw)
@@ -73,6 +73,12 @@ int main()
     return (int) status;
   }
 
+
+  //testIpoptConstraint(solver);
+  //testIpoptOptimization(solver);
+  //testIpoptJacobian(solver);
+  //testIpoptGradient(solver);
+
   // Ask Ipopt to solve the problem
   status = app->OptimizeTNLP(mynlp);
 
@@ -89,12 +95,6 @@ int main()
 
   return (int) status;
 
-  //testIpoptConstraint(solver);
-  //testIpoptOptimization(solver);
-  //testIpoptJacobian(solver);
-  //testIpoptGradient(solver);
-
-  return 0;
 }
 
 void getDocument(rapidjson::Document &document, const std::string &fileName)
@@ -117,24 +117,26 @@ void testIpoptConstraint(frost::FROST_SOLVER &solver)
   int nConst = (*document)["Constraint"]["numFuncs"].GetInt();
   int nOut = (*document)["Constraint"]["Dimension"].GetInt();
 
-  double c[2000];
-  double x[2000];
+  double c[nOut];
+  double x[nVar];
 
   for (int i = 0; i < nVar; i++)
     {
       x[i] = testConst["x"][i].GetDouble();
     }
 
+
   solver.eval_g(nVar, x, false, nOut, c);
 
   double error = 0;
-  for (int i = 0; i < nConst; i++)
+  for (int i = 0; i < nOut; i++)
     {
       error += pow(c[i] - testConst["C"][i].GetDouble(), 2);
     }
-
+  cout << "start test" << endl;
   cout << error << endl;
 }
+
 
 void testIpoptOptimization(frost::FROST_SOLVER &solver)
 {
@@ -147,7 +149,7 @@ void testIpoptOptimization(frost::FROST_SOLVER &solver)
 
 
   double o;
-  double x[2000];
+  double x[nVar];
 
   for (int i = 0; i < nVar; i++)
     {
@@ -171,7 +173,7 @@ void testIpoptJacobian(frost::FROST_SOLVER &solver)
   int nOut = (*document)["Constraint"]["Dimension"].GetInt();
   int nJOut = (*document)["Constraint"]["nnzJac"].GetInt();
 
-  double x[2000];
+  double x[nVar];
   double *Jval;
 
   Jval = new double[nJOut];
@@ -187,7 +189,10 @@ void testIpoptJacobian(frost::FROST_SOLVER &solver)
   double errorVal = 0;
   for (int i = 0; i < nJOut; i++)
     {
+      // cout << testConst["J_val"][i].GetDouble() << "\n";
       errorVal += pow(Jval[i] - testConst["J_val"][i].GetDouble(), 2);
+      if (pow(Jval[i] - testConst["J_val"][i].GetDouble(), 2) > 1e-4)
+        cout << i << ": "<< Jval[i] << ", " << testConst["J_val"][i].GetDouble() << "\n";
     }
 
   cout << errorVal << endl;

@@ -134,7 +134,7 @@ if GENERATE_C
     frost_c.createInitialGuess(solver, data_path);
     
     copyfile('CMakeLists.txt', 'c_code/CMakeLists.txt');
-    copyfile('default-ipopt.opt', 'c_code/res/ipopt.opt');
+    copyfile('default-ipopt.opt', 'c_code/ipopt.opt');
 end
 
 %% Run Optimization
