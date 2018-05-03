@@ -7,9 +7,8 @@
 using namespace Ipopt;
 
 namespace frost {
-  class FROST_SOLVER : public TNLP
-  {
-  public:
+  class FROST_SOLVER : public TNLP {
+ public:
     FROST_SOLVER(rapidjson::Document &document, const double *x0);
     virtual ~FROST_SOLVER();
 
@@ -45,12 +44,43 @@ namespace frost {
                                    Number obj_value,
                                    const IpoptData* ip_data,
                                    IpoptCalculatedQuantities* ip_cq);
-    //@}
 
-  public:
+
+    virtual bool set_var_bound(Index idx, Number x_l, Number x_u);
+    virtual bool set_constr_bound(Index idx, Number g_l, Number g_u);
+
+
+
+
+
+ public:
     rapidjson::Document *document;
-    double *in, *out;
-    double *x0;
+
+
+ private:
+    Number *in;   // temporary input variables
+    Number *out;  // temporary function outputs
+    Number *x0;   // the starting point (initial guess) for the NLP
+
+    Number *x_l;  // the lower bound of the variables
+    Number *x_u;  // the upper bound of the variables
+    Number *g_l;  // the lower bound of the constraints
+    Number *g_u;  // the upper bound of the constraints
+
+ public:
+    Index n_var; // the number of optimization variables
+    Index n_constr; // the number of constraints
+    Index nnz_jac_g; // the number of non-zeros in constraint Jacobian
+
+ public:
+    SolverReturn status; // the NLP status
+    Number *x_opt;    // the optimal solution
+    Number *z_L;      // the lower bound of z
+    Number *z_U;      // the upper bound of z
+    Number *lambda;   // the Lagrangian multiplier lambda
+    Number obj_value; // the objective function value
+    Number *g;        // the constraints evaluation
+
   };
 }
 

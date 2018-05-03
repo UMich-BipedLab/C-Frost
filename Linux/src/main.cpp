@@ -1,4 +1,6 @@
 #include "rapidjson/document.h"
+#include "rapidjson/filewritestream.h"
+#include "rapidjson/writer.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -8,14 +10,14 @@
 
 #include "IpIpoptApplication.hpp"
 
+#define PI 3.141592653589793
+
 using namespace std;
+using namespace rapidjson;
 
 void getDocument(rapidjson::Document &document, const std::string &fileName);
+void exportSolution(const frost::FROST_SOLVER *solver, const std::string &fileName);
 
-void testIpoptConstraint(frost::FROST_SOLVER &solver);
-void testIpoptOptimization(frost::FROST_SOLVER &solver);
-void testIpoptJacobian(frost::FROST_SOLVER &solver);
-//void testIpoptGradient(frost::FROST_SOLVER &solver);
 
 int main()
 {
@@ -38,11 +40,8 @@ int main()
 
   // Create a new instance of your nlp
   //  (use a SmartPtr, not raw)
-  //frost::FROST_SOLVER solver(document, x0);
-
-  // Create a new instance of your nlp
-  //  (use a SmartPtr, not raw)
-  SmartPtr<TNLP> mynlp = new  frost::FROST_SOLVER(document, x0);
+  frost::FROST_SOLVER* frost_nlp  = new  frost::FROST_SOLVER(document, x0);
+  SmartPtr<TNLP> nlp = frost_nlp;
   delete []x0;
 
   // Create a new instance of IpoptApplication
@@ -74,20 +73,64 @@ int main()
   }
 
 
-  //testIpoptConstraint(solver);
-  //testIpoptOptimization(solver);
-  //testIpoptJacobian(solver);
-  //testIpoptGradient(solver);
-
-  // Ask Ipopt to solve the problem
-  status = app->OptimizeTNLP(mynlp);
-
-  if (status == Solve_Succeeded) {
-    std::cout << std::endl << std::endl << "*** The problem solved!" << std::endl;
+  double r = 0.33;
+  double theta[16];
+  for (int i=0; i<16; i++)
+  {
+    theta[i] = i*PI/8;
+    cout << theta[i] << endl;
   }
-  else {
-    std::cout << std::endl << std::endl << "*** The problem FAILED!" << std::endl;
+
+  double px, vx, py, vy;
+  double x_pos_range = 0.1;
+  double x_vel_range = 0.5;
+  double y_pos_range = 0.05;
+  double y_vel_range = 0.2;
+
+
+
+  for (int i = 0; i < 1; i++)
+  {
+    for (int j = 0; j < 16; j++)
+    {
+      px = r * cos(theta[j]) * x_pos_range/2 - 0.09;
+      vx = r * sin(theta[j]) * x_vel_range/2;
+      py = r * cos(theta[i]) * y_pos_range/2;
+      vy = r * sin(theta[i]) * y_vel_range/2;
+
+      frost_nlp->set_constr_bound(100, px, px);// x-com position
+      frost_nlp->set_constr_bound(101, py, py);  // y-com position
+      frost_nlp->set_constr_bound(103, vx, vx);    // x-com velocity
+      frost_nlp->set_constr_bound(104, vy, vy);    // x-com velocity
+
+
+      // cout << fname << endl;
+      // // Ask Ipopt to solve the problem
+      status = app->OptimizeTNLP(nlp);
+
+      char fname [100];
+
+      if (status == Solve_Succeeded || status == Solved_To_Acceptable_Level
+          || status == Feasible_Point_Found || status == Restoration_Failed)
+      {
+        std::cout << std::endl << std::endl << "*** The problem solved!" << std::endl;
+        sprintf(fname, "export/standing_push_px%.3f_py%.3f_vx%0.3f_vy%0.3f.json", px, py, vx, vy);
+      }
+      else {
+        std::cout << std::endl << std::endl << "*** The problem FAILED!" << std::endl;
+        sprintf(fname, "export/standing_push_px%.3f_py%.3f_vx%0.3f_vy%0.3f_failed.json", px, py, vx, vy);
+      }
+
+      exportSolution(frost_nlp, fname);
+    }
   }
+
+
+
+
+
+
+
 
   // As the SmartPtrs go out of scope, the reference count
   // will be decremented and the objects will automatically
@@ -106,128 +149,55 @@ void getDocument(rapidjson::Document &document, const std::string &fileName)
   document.Parse(json.c_str());
 }
 
-void testIpoptConstraint(frost::FROST_SOLVER &solver)
+void exportSolution(const frost::FROST_SOLVER *solver, const std::string &fileName)
 {
-  rapidjson::Document testConst;
-  getDocument(testConst, "res/ipopt_constraint_test.json");
+  // Create a JSON object to fill out the results
+  Document doc;
+  doc.SetObject();
 
-  rapidjson::Document *document = solver.document;
+  Document::AllocatorType& allocator = doc.GetAllocator();
 
-  int nVar = (*document)["Variable"]["dimVars"].GetInt();
-  int nConst = (*document)["Constraint"]["numFuncs"].GetInt();
-  int nOut = (*document)["Constraint"]["Dimension"].GetInt();
+  doc.AddMember("status", solver->status, allocator);
+  doc.AddMember("objective", solver->obj_value, allocator);
 
-  double c[nOut];
-  double x[nVar];
+  Value x(kArrayType);
+  Value zl(kArrayType);
+  Value zu(kArrayType);
+  for (int i=0; i < solver->n_var; i++)
+  {
+    x.PushBack(solver->x_opt[i], allocator);
+    zl.PushBack(solver->z_L[i], allocator);
+    zu.PushBack(solver->z_U[i], allocator);
+  }
 
-  for (int i = 0; i < nVar; i++)
-    {
-      x[i] = testConst["x"][i].GetDouble();
-    }
+  Value g(kArrayType);
+  Value lambda(kArrayType);
+  for (int i=0; i< solver->n_constr; i++)
+  {
+    g.PushBack(solver->g[i], allocator);
+    lambda.PushBack(solver->lambda[i], allocator);
+  }
+
+  doc.AddMember("x", x, allocator);
+  doc.AddMember("zl", zl, allocator);
+  doc.AddMember("zu", zu, allocator);
+  doc.AddMember("constr", g, allocator);
+  doc.AddMember("lambda", lambda, allocator);
 
 
-  solver.eval_g(nVar, x, false, nOut, c);
+  // write to a buffer
+  StringBuffer buf;
+  Writer<StringBuffer> writer(buf);
+  doc.Accept(writer);
+  std::string json(buf.GetString(), buf.GetSize());
 
-  double error = 0;
-  for (int i = 0; i < nOut; i++)
-    {
-      error += pow(c[i] - testConst["C"][i].GetDouble(), 2);
-    }
-  cout << "start test" << endl;
-  cout << error << endl;
+
+  // write to a json file
+  ofstream out(fileName.c_str());
+  out << json;
+  if (!out.good())
+  {
+    throw std::runtime_error ("Can't write the JSON string to the file!");
+  }
+
 }
-
-
-void testIpoptOptimization(frost::FROST_SOLVER &solver)
-{
-  rapidjson::Document testConst;
-  getDocument(testConst, "res/ipopt_constraint_test.json");
-
-  rapidjson::Document *document = solver.document;
-
-  int nVar = (*document)["Variable"]["dimVars"].GetInt();
-
-
-  double o;
-  double x[nVar];
-
-  for (int i = 0; i < nVar; i++)
-    {
-      x[i] = testConst["x"][i].GetDouble();
-    }
-
-  solver.eval_f(nVar, x, false, o);
-
-  cout << o << endl;
-}
-
-void testIpoptJacobian(frost::FROST_SOLVER &solver)
-{
-  rapidjson::Document testConst;
-  getDocument(testConst, "res/ipopt_jacobian_test.json");
-
-  rapidjson::Document *document = solver.document;
-
-  int nVar = (*document)["Variable"]["dimVars"].GetInt();
-  int nConst = (*document)["Constraint"]["numFuncs"].GetInt();
-  int nOut = (*document)["Constraint"]["Dimension"].GetInt();
-  int nJOut = (*document)["Constraint"]["nnzJac"].GetInt();
-
-  double x[nVar];
-  double *Jval;
-
-  Jval = new double[nJOut];
-
-  for (int i = 0; i < nVar; i++)
-    {
-      x[i] = testConst["x"][i].GetDouble();
-    }
-
-  solver.eval_jac_g(nVar, x, false, nOut, nJOut, NULL, NULL, Jval);
-
-
-  double errorVal = 0;
-  for (int i = 0; i < nJOut; i++)
-    {
-      // cout << testConst["J_val"][i].GetDouble() << "\n";
-      errorVal += pow(Jval[i] - testConst["J_val"][i].GetDouble(), 2);
-      if (pow(Jval[i] - testConst["J_val"][i].GetDouble(), 2) > 1e-4)
-        cout << i << ": "<< Jval[i] << ", " << testConst["J_val"][i].GetDouble() << "\n";
-    }
-
-  cout << errorVal << endl;
-
-  delete[] Jval;
-}
-
-
-// void testIpoptGradient(frost::FROST_SOLVER &solver)
-// {
-//   rapidjson::Document testConst;
-//   getDocument(testConst, "res/ipopt_gradient_test.json");
-
-//   int nVar = document["Variable"]["dimVars"].GetInt();
-//   int nJOut = document["Objective"]["nnzJac"].GetInt();
-
-//   double x[2000];
-//   double *Jgrad;
-
-//   Jgrad = new double[nJOut];
-
-//   for (int i = 0; i < nVar; i++)
-//     {
-//       x[i] = testConst["x"][i].GetDouble();
-//     }
-
-//   frost::IpoptGradient(Jgrad, x, document);
-
-//   double errorVal = 0;
-//   for (int i = 0; i < nJOut; i++)
-//     {
-//       errorVal += pow(Jgrad[i] - testConst["J_val"][i].GetDouble(), 2);
-//     }
-
-//   cout << errorVal << endl;
-
-//   delete[] Jgrad;
-// }
