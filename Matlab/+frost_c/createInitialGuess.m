@@ -1,5 +1,8 @@
-function createInitialGuess(solver, data_path)
-    x0 = getInitialGuess(solver.Nlp, solver.Options.initialguess);
+function createInitialGuess(solver, data_path, x0)
+    if ~exist('x0', 'var')
+        x0 = getInitialGuess(solver.Nlp, solver.Options.initialguess);
+    end
+    
     if iscolumn(x0)
         x0 = x0';
     end
