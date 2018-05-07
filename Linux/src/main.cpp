@@ -73,64 +73,23 @@ int main()
   }
 
 
-  double r = 0.33;
-  double theta[16];
-  for (int i=0; i<16; i++)
+
+  // cout << fname << endl;
+  // // Ask Ipopt to solve the problem
+  status = app->OptimizeTNLP(nlp);
+
+  char fname [100] = "output.json";
+
+  if (status == Solve_Succeeded || status == Solved_To_Acceptable_Level
+      || status == Feasible_Point_Found || status == Restoration_Failed)
   {
-    theta[i] = i*PI/8;
-    cout << theta[i] << endl;
+    std::cout << std::endl << std::endl << "*** The problem solved!" << std::endl;
+  }
+  else {
+    std::cout << std::endl << std::endl << "*** The problem FAILED!" << std::endl;
   }
 
-  double px, vx, py, vy;
-  double x_pos_range = 0.1;
-  double x_vel_range = 0.5;
-  double y_pos_range = 0.05;
-  double y_vel_range = 0.2;
-
-
-
-  for (int i = 0; i < 1; i++)
-  {
-    for (int j = 0; j < 16; j++)
-    {
-      px = r * cos(theta[j]) * x_pos_range/2 - 0.09;
-      vx = r * sin(theta[j]) * x_vel_range/2;
-      py = r * cos(theta[i]) * y_pos_range/2;
-      vy = r * sin(theta[i]) * y_vel_range/2;
-
-      frost_nlp->set_constr_bound(100, px, px);// x-com position
-      frost_nlp->set_constr_bound(101, py, py);  // y-com position
-      frost_nlp->set_constr_bound(103, vx, vx);    // x-com velocity
-      frost_nlp->set_constr_bound(104, vy, vy);    // x-com velocity
-
-
-      // cout << fname << endl;
-      // // Ask Ipopt to solve the problem
-      status = app->OptimizeTNLP(nlp);
-
-      char fname [100];
-
-      if (status == Solve_Succeeded || status == Solved_To_Acceptable_Level
-          || status == Feasible_Point_Found || status == Restoration_Failed)
-      {
-        std::cout << std::endl << std::endl << "*** The problem solved!" << std::endl;
-        sprintf(fname, "export/standing_push_px%.3f_py%.3f_vx%0.3f_vy%0.3f.json", px, py, vx, vy);
-      }
-      else {
-        std::cout << std::endl << std::endl << "*** The problem FAILED!" << std::endl;
-        sprintf(fname, "export/standing_push_px%.3f_py%.3f_vx%0.3f_vy%0.3f_failed.json", px, py, vx, vy);
-      }
-
-      exportSolution(frost_nlp, fname);
-    }
-  }
-
-
-
-
-
-
-
+  exportSolution(frost_nlp, fname);
 
   // As the SmartPtrs go out of scope, the reference count
   // will be decremented and the objects will automatically

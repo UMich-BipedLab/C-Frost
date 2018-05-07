@@ -10,9 +10,9 @@ constr_viol_tol  1e-5
 compl_inf_tol  1e-1
 mu_strategy adaptive
 #output_file "ipopt.out"
-linear_solver "ma57"
-
-#print_timing_statistics yes
+linear_solver "ma97"
+wsmp_num_threads 8
+print_timing_statistics yes
 #print_info_string yes
 
 ma57_automatic_scaling yes
@@ -39,8 +39,8 @@ acceptable_tol  1e-1
 #adaptive_mu_globalization kkt-error
 
 # the following two options work the best (make it slow???)
-alpha_for_y dual-and-full
+#alpha_for_y dual-and-full
 #alpha_for_y bound-mult
 
-#linear_scaling_on_demand yes
+linear_scaling_on_demand yes
 #neg_curv_test_reg no

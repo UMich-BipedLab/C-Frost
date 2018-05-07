@@ -1,6 +1,22 @@
 function [obj] = formulateProblemStructure(solver, funcs)
     obj = struct();
     
+    % Variable
+    [dimVars, lb, ub] = getVarInfo(solver.Nlp);
+    if iscolumn(lb)
+        lb = lb';
+    end
+    if iscolumn(ub)
+        ub = ub';
+    end
+    
+    obj.Variable = struct();
+    obj.Variable.dimVars = dimVars;
+    lb(lb == -Inf) = -1e6;
+    obj.Variable.lb = lb;
+    ub(ub == Inf) = 1e6;
+    obj.Variable.ub = ub;
+    
     % Constraints
     obj.Constraint = solver.Constraint;
     
@@ -45,12 +61,57 @@ function [obj] = formulateProblemStructure(solver, funcs)
     if iscolumn(obj.Constraint.FuncIndices)
         obj.Constraint.FuncIndices = obj.Constraint.FuncIndices';
     end
-    if iscolumn(obj.Constraint.nzJacRows)
-        obj.Constraint.nzJacRows = obj.Constraint.nzJacRows';
+    
+    Js = sparse2(obj.Constraint.nzJacRows, obj.Constraint.nzJacCols, ...
+        ones(obj.Constraint.nnzJac,1), obj.Constraint.Dimension,...
+        dimVars, obj.Constraint.nnzJac);
+    
+    [iRows, jCols] = find(Js);
+    
+    for i=1:obj.Constraint.numFuncs
+        if ~isempty(obj.Constraint.nzJacIndices{i})     
+            
+            % get the sparsity pattern (i.e., the indices of non-zero elements)
+            % of the Jacobian of the current function
+            
+            jac_pattern = feval(obj.Constraint.JacStructFuncs{i},0);
+            % retrieve the indices of dependent variables
+            dep_indices = obj.Constraint.DepIndices{i};
+            func_indics = obj.Constraint.FuncIndices{i};
+            
+            if iscolumn(func_indics(jac_pattern(:,1)))
+                f_list = func_indics(jac_pattern(:,1));
+            else
+                f_list = func_indics(jac_pattern(:,1))';
+            end
+            
+            if iscolumn(dep_indices(jac_pattern(:,2)))
+                x_list = dep_indices(jac_pattern(:,2));
+            else
+                x_list = dep_indices(jac_pattern(:,2))';
+            end
+            
+            idx = arrayfun(@(x,y)intersect(find(iRows==x),find(jCols==y)),...
+               f_list , x_list);
+            
+            obj.Constraint.nzJacIndices{i} = idx';
+%             %| @note The JacPattern gives the indices of non-zero Jacobian
+%             % elements of the current function.
+%             func_struct.nzJacRows(jac_index) = func_indics(jac_pattern.Rows);
+%             
+%             func_struct.nzJacCols(jac_index) = dep_indices(jac_pattern.Cols);
+        end
     end
-    if iscolumn(obj.Constraint.nzJacCols)
-        obj.Constraint.nzJacCols = obj.Constraint.nzJacCols';
-    end
+    obj.Constraint.nzJacRows = iRows';
+    obj.Constraint.nzJacCols = jCols';
+    obj.Constraint.nnzJac = length(iRows);
+    obj.Constraint = rmfield(obj.Constraint, 'JacStructFuncs');
+    %     if iscolumn(obj.Constraint.nzJacRows)
+    %         obj.Constraint.nzJacRows = obj.Constraint.nzJacRows';
+    %     end
+    %     if iscolumn(obj.Constraint.nzJacCols)
+    %         obj.Constraint.nzJacCols = obj.Constraint.nzJacCols';
+    %     end
     if iscolumn(obj.Constraint.nzJacIndices)
         obj.Constraint.nzJacIndices = obj.Constraint.nzJacIndices';
     end
@@ -62,6 +123,7 @@ function [obj] = formulateProblemStructure(solver, funcs)
     if iscolumn(obj.Constraint.UpperBound)
         obj.Constraint.UpperBound = obj.Constraint.UpperBound';
     end
+    
     
     % Objective
     obj.Objective = solver.Objective;
@@ -119,21 +181,7 @@ function [obj] = formulateProblemStructure(solver, funcs)
     obj.Objective = rmfield(obj.Objective, 'LowerBound');
     obj.Objective = rmfield(obj.Objective, 'UpperBound');
     
-    % Variable
-    [dimVars, lb, ub] = getVarInfo(solver.Nlp);
-    if iscolumn(lb)
-        lb = lb';
-    end
-    if iscolumn(ub)
-        ub = ub';
-    end
     
-    obj.Variable = struct();
-    obj.Variable.dimVars = dimVars;
-    lb(lb == -Inf) = -1e6;
-    obj.Variable.lb = lb;
-    ub(ub == Inf) = 1e6;
-    obj.Variable.ub = ub;
     
     % Options
     obj.Options = solver.Options;
