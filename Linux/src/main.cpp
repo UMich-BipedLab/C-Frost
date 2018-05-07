@@ -1,28 +1,37 @@
 #include "rapidjson/document.h"
 #include "rapidjson/filewritestream.h"
 #include "rapidjson/writer.h"
+#include "cxxopts.hpp"
 #include <iostream>
 #include <fstream>
 #include <string>
 #include "frost/IpoptProblem.h"
 #include "frost/functionlist.hh"
-#include <cmath>
 
 #include "IpIpoptApplication.hpp"
-
-#define PI 3.141592653589793
 
 using namespace std;
 using namespace rapidjson;
 
 void getDocument(rapidjson::Document &document, const std::string &fileName);
+void exportOutput(const frost::FROST_SOLVER *solver, const std::string &fileName);
 void exportSolution(const frost::FROST_SOLVER *solver, const std::string &fileName);
 
 
-int main()
+int main(int argc, const char* argv[])
 {
+  cxxopts::Options options("FROST optimization", "The FROST optimization based on Ipopt");
+  options.add_options()
+  ("options", "Ipopt options file", cxxopts::value<std::string>())
+  ("initial", "Initial condition file (json)", cxxopts::value<std::string>())
+  ("data", "Data file (json)", cxxopts::value<std::string>())
+  ("output", "Output file (json)", cxxopts::value<std::string>())
+  ("solution", "Solution output file (json)", cxxopts::value<std::string>());
+  
+  auto param = options.parse(argc, argv);
+  
   rapidjson::Document document;
-  getDocument(document, "res/data.json");
+  getDocument(document, param["data"].as<std::string>());
 
   assert(document.IsObject());
   assert(document.HasMember("Constraint"));
@@ -31,7 +40,7 @@ int main()
   assert(document.HasMember("Options"));
 
   rapidjson::Document init_document;
-  getDocument(init_document, "res/init.json");
+  getDocument(init_document, param["initial"].as<std::string>());
   assert(init_document.IsArray());
   double *x0 = new double[init_document.Size()];
 
@@ -62,7 +71,7 @@ int main()
   // app->Options()->SetStringValue("limited_memory_update_type", "bfgs");
   // The following overwrites the default name (ipopt.opt) of the
   // options file
-  app->Options()->SetStringValue("option_file_name", "ipopt.opt");
+  app->Options()->SetStringValue("option_file_name", param["options"].as<std::string>());
 
   // Initialize the IpoptApplication and process the options
   ApplicationReturnStatus status;
@@ -72,64 +81,28 @@ int main()
     return (int) status;
   }
 
-
-  double r = 0.33;
-  double theta[16];
-  for (int i=0; i<16; i++)
+  // cout << fname << endl;
+  // // Ask Ipopt to solve the problem
+  status = app->OptimizeTNLP(nlp);
+  
+  if (status == Solve_Succeeded || status == Solved_To_Acceptable_Level
+    || status == Feasible_Point_Found || status == Restoration_Failed)
   {
-    theta[i] = i*PI/8;
-    cout << theta[i] << endl;
+    std::cout << std::endl << std::endl << "*** The problem solved!" << std::endl;
+  }
+  else {
+    std::cout << std::endl << std::endl << "*** The problem FAILED!" << std::endl;
   }
 
-  double px, vx, py, vy;
-  double x_pos_range = 0.1;
-  double x_vel_range = 0.5;
-  double y_pos_range = 0.05;
-  double y_vel_range = 0.2;
-
-
-
-  for (int i = 0; i < 1; i++)
+  if (param.count("output") >= 1)
   {
-    for (int j = 0; j < 16; j++)
-    {
-      px = r * cos(theta[j]) * x_pos_range/2 - 0.09;
-      vx = r * sin(theta[j]) * x_vel_range/2;
-      py = r * cos(theta[i]) * y_pos_range/2;
-      vy = r * sin(theta[i]) * y_vel_range/2;
-
-      frost_nlp->set_constr_bound(100, px, px);// x-com position
-      frost_nlp->set_constr_bound(101, py, py);  // y-com position
-      frost_nlp->set_constr_bound(103, vx, vx);    // x-com velocity
-      frost_nlp->set_constr_bound(104, vy, vy);    // x-com velocity
-
-
-      // cout << fname << endl;
-      // // Ask Ipopt to solve the problem
-      status = app->OptimizeTNLP(nlp);
-
-      char fname [100];
-
-      if (status == Solve_Succeeded || status == Solved_To_Acceptable_Level
-          || status == Feasible_Point_Found || status == Restoration_Failed)
-      {
-        std::cout << std::endl << std::endl << "*** The problem solved!" << std::endl;
-        sprintf(fname, "export/standing_push_px%.3f_py%.3f_vx%0.3f_vy%0.3f.json", px, py, vx, vy);
-      }
-      else {
-        std::cout << std::endl << std::endl << "*** The problem FAILED!" << std::endl;
-        sprintf(fname, "export/standing_push_px%.3f_py%.3f_vx%0.3f_vy%0.3f_failed.json", px, py, vx, vy);
-      }
-
-      exportSolution(frost_nlp, fname);
-    }
+    exportOutput(frost_nlp, param["output"].as<std::string>());
   }
 
-
-
-
-
-
+  if (param.count("solution") >= 1)
+  {
+    exportSolution(frost_nlp, param["solution"].as<std::string>());
+  }
 
 
   // As the SmartPtrs go out of scope, the reference count
@@ -147,6 +120,35 @@ void getDocument(rapidjson::Document &document, const std::string &fileName)
   in.close();
 
   document.Parse(json.c_str());
+}
+
+void exportOutput(const frost::FROST_SOLVER *solver, const std::string &fileName)
+{
+  // Create a JSON object to fill out the results
+  Document doc;
+  Document::AllocatorType& allocator = doc.GetAllocator();
+
+  doc.SetArray();
+  for (int i=0; i < solver->n_var; i++)
+  {
+    doc.PushBack(solver->x_opt[i], allocator);
+  }
+
+  // write to a buffer
+  StringBuffer buf;
+  Writer<StringBuffer> writer(buf);
+  doc.Accept(writer);
+  std::string json(buf.GetString(), buf.GetSize());
+
+
+  // write to a json file
+  ofstream out(fileName.c_str());
+  out << json;
+  if (!out.good())
+  {
+    throw std::runtime_error ("Can't write the JSON string to the file!");
+  }
+
 }
 
 void exportSolution(const frost::FROST_SOLVER *solver, const std::string &fileName)
