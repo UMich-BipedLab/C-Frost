@@ -1,14 +1,17 @@
 #include "rapidjson/document.h"
 #include "rapidjson/filewritestream.h"
 #include "rapidjson/writer.h"
-#include "cxxopts.hpp"
+#include "cxxopts.hpp" // Found at https://github.com/jarro2783/cxxopts
+#include "IpIpoptApplication.hpp"
+
 #include <iostream>
 #include <fstream>
 #include <string>
-#include "frost/IpoptProblem.h"
-#include "frost/functionlist.hh"
 
-#include "IpIpoptApplication.hpp"
+#include "frost/IpoptProblem.h"
+#include "frost/JacGEvalSingleThread.h"
+#include "frost/JacGEvalMultiThread.h"
+#include "frost/functionlist.hh"
 
 using namespace std;
 using namespace rapidjson;
@@ -26,7 +29,8 @@ int main(int argc, const char* argv[])
   ("initial", "Initial condition file (json)", cxxopts::value<std::string>())
   ("data", "Data file (json)", cxxopts::value<std::string>())
   ("output", "Output file (json)", cxxopts::value<std::string>())
-  ("solution", "Solution output file (json)", cxxopts::value<std::string>());
+  ("solution", "Solution output file (json)", cxxopts::value<std::string>())
+  ("threads", "Number of threads (default=1)", cxxopts::value<int>()->default_value("1"));
   
   auto param = options.parse(argc, argv);
   
@@ -49,7 +53,12 @@ int main(int argc, const char* argv[])
 
   // Create a new instance of your nlp
   //  (use a SmartPtr, not raw)
-  frost::FROST_SOLVER* frost_nlp  = new  frost::FROST_SOLVER(document, x0);
+  frost::FROST_SOLVER* frost_nlp;
+  if (param["threads"].as<int>() == 1)
+    frost_nlp = new  frost::FROST_SOLVER(document, x0, new frost::JacGEvalSingleThread(document));
+  else
+    frost_nlp = new  frost::FROST_SOLVER(document, x0, new frost::JacGEvalMultiThread(document, param["threads"].as<int>()));
+  
   SmartPtr<TNLP> nlp = frost_nlp;
   delete []x0;
 

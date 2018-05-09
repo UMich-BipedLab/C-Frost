@@ -1,6 +1,7 @@
 #ifndef IPOPTPROBLEM_H
 #define IPOPTPROBLEM_H
 
+#include "frost/JacGEvalAbstract.h"
 #include "rapidjson/document.h"
 #include "IpTNLP.hpp"
 
@@ -9,7 +10,7 @@ using namespace Ipopt;
 namespace frost {
   class FROST_SOLVER : public TNLP {
  public:
-    FROST_SOLVER(rapidjson::Document &document, const double *x0);
+    FROST_SOLVER(rapidjson::Document &document, const double *x0, frost::JacGEvalAbstract *jacGEval);
     virtual ~FROST_SOLVER();
 
     virtual bool get_nlp_info(Index& n, Index& m, Index& nnz_jac_g,
@@ -55,6 +56,7 @@ namespace frost {
 
  public:
     rapidjson::Document *document;
+    frost::JacGEvalAbstract *jacGEval;
 
 
  private:
