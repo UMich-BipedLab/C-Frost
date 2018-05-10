@@ -14,14 +14,13 @@ using namespace Ipopt;
 
 namespace frost
 {
-  
-class JacGEvalMultiThread_worker;
+
 class MyMonitor;
 
 class JacGEvalMultiThread : public JacGEvalAbstract
 {
 public:
-  JacGEvalMultiThread(rapidjson::Document &document);
+  JacGEvalMultiThread(rapidjson::Document &document, int nThreads);
   virtual ~JacGEvalMultiThread();
   virtual bool eval_jac_g(Index n, const Number *x, bool new_x,
                           Index m, Index nele_jac, Index *iRow, Index *jCol,

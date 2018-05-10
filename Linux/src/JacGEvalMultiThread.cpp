@@ -3,6 +3,7 @@
 #include "frost/functionlist.hh"
 #include "IpTNLP.hpp"
 
+#include <iostream>
 #include <thread>
 #include <mutex>
 #include <vector>
@@ -12,156 +13,203 @@ using namespace Ipopt;
 using namespace std;
 using namespace rapidjson;
 
-
-class frost::JacGEvalMultiThread_worker
+namespace frost
 {
-public:
-  JacGEvalMultiThread_worker(int nJOutConst, frost::MyMonitor *monitor, rapidjson::Document *document)
+  class JacGEvalMultiThread_worker
   {
-    this->in = new Number[nJOutConst];
-    this->out = new Number[nJOutConst];
-    this->monitor = monitor;
-    this->document = document;
-  }
+  public:
+    JacGEvalMultiThread_worker(int nJOutConst, frost::MyMonitor *monitor, rapidjson::Document *document);
+    ~JacGEvalMultiThread_worker();
+    void start();
+    void Compute();
 
-  ~JacGEvalMultiThread_worker()
-  {
-    delete []in;
-    delete []out;
-  }
-
-  void Compute()
-  {
-    while(true)
-    {
-      int i = monitor->getConstraint();
-
-      if (i < 0)
-        return;
-
-      if ((*document)["Constraint"]["nzJacIndices"][i].IsNull())
-        continue;
-
-      int fIdx = (*document)["Constraint"]["JacFuncs"][i].GetInt() - 1;
-      int numDep = 0;
-      if ((*document)["Constraint"]["DepIndices"][i].IsArray())
-      {
-        numDep = (*document)["Constraint"]["DepIndices"][i].Size();
-        for (int j = 0; j < numDep; j++)
-        {
-          in[j] = x[(*document)["Constraint"]["DepIndices"][i][j].GetInt() - 1];
-        }
-      }
-      else if ((*document)["Constraint"]["DepIndices"][i].IsNull() == false)
-      {
-        numDep = 1;
-        in[0] = x[(*document)["Constraint"]["DepIndices"][i].GetInt() - 1];
-      }
-
-      int numAux = 0;
-      if ((*document)["Constraint"]["AuxData"][i].IsArray())
-      {
-        numAux = (*document)["Constraint"]["AuxData"][i].Size();
-        for (int j = 0; j < numAux; j++)
-        {
-          in[j + numDep] = (*document)["Constraint"]["AuxData"][i][j].GetDouble();
-        }
-      }
-      else if ((*document)["Constraint"]["AuxData"][i].IsNull() == false)
-      {
-        numAux = 1;
-        in[0 + numDep] = (*document)["Constraint"]["AuxData"][i].GetDouble();
-      }
-
-      frost::functions[fIdx](out, in);
-
-      monitor->updateValues(out);
-    }
-  }
-
-private:
-  Number *in;  // temporary input variables
-  Number *out; // temporary function outputs
-  frost::MyMonitor *monitor;
-  rapidjson::Document *document;
-};
+  private:
+    Number *in;  // temporary input variables
+    Number *out; // temporary function outputs
+    frost::MyMonitor *monitor;
+    rapidjson::Document *document;
+    std::thread *th;
+  };
+}
 
 class frost::MyMonitor
 {
 public:
-  MyMonitor(int numThreads, int nJOutConst, rapidjson::Document *document)
+  MyMonitor(int numThreads, int nJOutConst, rapidjson::Document *document);
+  ~MyMonitor();
+  void resetConstraints(int num_of_const, const Number* x);
+  void setValues(Number* values);
+  int getConstraint();
+  void updateValues(Number *out, int i);
+  void waitTillReady();
+  const Number * getX();
+
+private:
+  std::mutex lock;
+  int next_const_index;
+  int num_of_const;
+  int num_of_const_done;
+  std::condition_variable signal_done;
+  std::condition_variable queue_available;
+  Number* values;
+  const Number *x;
+  rapidjson::Document *document;
+  std::vector<frost::JacGEvalMultiThread_worker*> thread_obj;
+  bool done;
+};
+
+frost::JacGEvalMultiThread_worker::JacGEvalMultiThread_worker(int nJOutConst, frost::MyMonitor *monitor, rapidjson::Document *document)
+{
+  this->in = new Number[nJOutConst];
+  this->out = new Number[nJOutConst];
+  this->monitor = monitor;
+  this->document = document;
+}
+
+frost::JacGEvalMultiThread_worker::~JacGEvalMultiThread_worker()
+{
+  this->th->join();
+
+  delete []in;
+  delete []out;
+}
+
+void frost::JacGEvalMultiThread_worker::start()
+{
+  //std::cout << "Making myself!" << std::endl;
+  this->th = new std::thread(&frost::JacGEvalMultiThread_worker::Compute, this);
+}
+
+void frost::JacGEvalMultiThread_worker::Compute()
+{
+  //std::cout << "In thread compute" << std::endl;
+  while(true)
   {
-    this->document = document;
-
-    num_of_const_done = 0;
-    num_of_const = 0;
-    next_const_index = 0;
-    done = false;
-
-    for (int i = 0; i < numThreads; i++)
-    {
-      thread_obj.push_back(new frost::JacGEvalMultiThread_worker(nJOutConst, this, document));
-      threads.push_back(new std::thread(&(thread_obj[i]->Compute())));
-    }
-  }
-
-  ~MyMonitor()
-  {
-    done = true;
-    queue_available.notify_all();
-
-    for (int i = 0; i < threads.size(); i++)
-    {
-      threads[i]->join();
-    }
-
-    for (int i = 0; i < threads.size(); i++)
-    {
-      delete threads[i];
-      delete thread_obj[i];
-    }
-  }
-
-  void resetConstraints(int num_of_const)
-  {
-    std::unique_lock<std::mutex> lk(lock);
-
-    this->num_of_const = num_of_const;
-    next_const_index = 0;
-    num_of_const_done = 0;
-
-    queue_available.notify_all();
-  }
-
-  void setValues(Number* values)
-  {
-    std::unique_lock<std::mutex> lk(lock);
+    int i = monitor->getConstraint();
     
-    this->values = values;
-  }
+    const Number *x = monitor->getX();
 
-  int getConstraint()
-  {
-    std::unique_lock<std::mutex> lk(lock);
+    if (i < 0)
+      break;
+    
+    //std::cout<<"a "<<(*document)["Constraint"]["numFuncs"].GetInt()<<std::endl;
 
-    while (next_const_index == num_of_const || done)
+    if ((*document)["Constraint"]["nzJacIndices"][i].IsNull())
     {
-      queue_available.wait(lk);
+      monitor->updateValues(out, -1);
+      continue;
     }
 
-    if (done)
-      return -1;
+    int fIdx = (*document)["Constraint"]["JacFuncs"][i].GetInt() - 1;
+    int numDep = 0;
+    if ((*document)["Constraint"]["DepIndices"][i].IsArray())
+    {
+      numDep = (*document)["Constraint"]["DepIndices"][i].Size();
+      for (int j = 0; j < numDep; j++)
+      {
+        in[j] = x[(*document)["Constraint"]["DepIndices"][i][j].GetInt() - 1];
+      }
+    }
+    else if ((*document)["Constraint"]["DepIndices"][i].IsNull() == false)
+    {
+      numDep = 1;
+      in[0] = x[(*document)["Constraint"]["DepIndices"][i].GetInt() - 1];
+    }
 
-    int x = next_const_index;
-    next_const_index++;
+    //std::cout<<"b"<<std::endl;
+    int numAux = 0;
+    if ((*document)["Constraint"]["AuxData"][i].IsArray())
+    {
+      numAux = (*document)["Constraint"]["AuxData"][i].Size();
+      for (int j = 0; j < numAux; j++)
+      {
+        in[j + numDep] = (*document)["Constraint"]["AuxData"][i][j].GetDouble();
+      }
+    }
+    else if ((*document)["Constraint"]["AuxData"][i].IsNull() == false)
+    {
+      numAux = 1;
+      in[0 + numDep] = (*document)["Constraint"]["AuxData"][i].GetDouble();
+    }
 
-    return x;
+    frost::functions[fIdx](out, in);
+
+    //std::cout<<"c"<<std::endl;
+    monitor->updateValues(out, i);
+  }
+}
+
+frost::MyMonitor::MyMonitor(int numThreads, int nJOutConst, rapidjson::Document *document)
+{
+  this->document = document;
+
+  num_of_const_done = 0;
+  num_of_const = 0;
+  next_const_index = 0;
+  done = false;
+
+  for (int i = 0; i < numThreads; i++)
+  {
+    thread_obj.push_back(new frost::JacGEvalMultiThread_worker(nJOutConst, this, document));
+    thread_obj[i]->start();
+  }
+}
+
+frost::MyMonitor::~MyMonitor()
+{
+  done = true;
+  queue_available.notify_all();
+
+  for (unsigned int i = 0; i < thread_obj.size(); i++)
+  {
+    delete thread_obj[i];
+  }
+}
+
+void frost::MyMonitor::resetConstraints(int num_of_const, const Number *x)
+{
+  std::unique_lock<std::mutex> lk(lock);
+
+  this->num_of_const = num_of_const;
+  next_const_index = 0;
+  num_of_const_done = 0;
+
+  queue_available.notify_all();
+
+  this->x = x;
+}
+
+void frost::MyMonitor::setValues(Number* values)
+{
+  std::unique_lock<std::mutex> lk(lock);
+  
+  this->values = values;
+}
+
+int frost::MyMonitor::getConstraint()
+{
+  std::unique_lock<std::mutex> lk(lock);
+
+  while (next_const_index == num_of_const || done)
+  {
+    queue_available.wait(lk);
   }
 
-  void updateValues(Number *out)
-  {
-    std::unique_lock<std::mutex> lk(lock);
+  if (done)
+    return -1;
 
+  int x = next_const_index;
+  next_const_index++;
+
+  return x;
+}
+
+void frost::MyMonitor::updateValues(Number *out, int i)
+{
+  std::unique_lock<std::mutex> lk(lock);
+
+  if (i >= 0)
+  {
     int numConst = 0;
     if ((*document)["Constraint"]["nzJacIndices"][i].IsArray())
     {
@@ -176,41 +224,36 @@ public:
       numConst = 1;
       values[(*document)["Constraint"]["nzJacIndices"][i].GetInt() - 1] += out[0];
     }
-
-    num_of_const_done++;
-
-    if (num_of_const_done == num_of_const)
-    {
-      signal_done.notify_all();
-    }
   }
 
-  void waitTillReady()
+  num_of_const_done++;
+
+  //cout<<num_of_const_done<<endl;
+
+  if (num_of_const_done == num_of_const)
   {
-    std::unique_lock<std::mutex> lk(lock);
-
-    while (num_of_const_done != num_of_const)
-    {
-      signal_done.wait(lk);
-    }
+    signal_done.notify_all();
   }
 
-private:
-  std::mutex lock;
-  int next_const_index;
-  int num_of_const;
-  int num_of_const_done;
-  std::condition_variable signal_done;
-  std::condition_variable queue_available;
-  Number* values;
-  rapidjson::Document *document;
-  std::vector<std::thread*> threads;
-  std::vector<frost::JacGEvalMultiThread_worker*> thread_obj;
-  bool done;
-};
+}
+
+void frost::MyMonitor::waitTillReady()
+{
+  std::unique_lock<std::mutex> lk(lock);
+
+  while (num_of_const_done != num_of_const)
+  {
+    signal_done.wait(lk);
+  }
+}
+
+const Number * frost::MyMonitor::getX()
+{
+  return x;
+}
 
 /** The class constructor function */
-frost::JacGEvalMultiThread::JacGEvalMultiThread(rapidjson::Document &document)
+frost::JacGEvalMultiThread::JacGEvalMultiThread(rapidjson::Document &document, int nThreads)
 {
   int nVar = document["Variable"]["dimVars"].GetInt();
   int nConst = document["Constraint"]["numFuncs"].GetInt();
@@ -224,7 +267,7 @@ frost::JacGEvalMultiThread::JacGEvalMultiThread(rapidjson::Document &document)
 
   this->document = &document;
 
-  this->monitor = new frost::MyMonitor(numThreads, nJOutConst, &document);
+  this->monitor = new frost::MyMonitor(nThreads, nJOutConst, &document);
 }
 
 frost::JacGEvalMultiThread::~JacGEvalMultiThread()
@@ -248,7 +291,7 @@ bool frost::JacGEvalMultiThread::eval_jac_g(Index n, const Number* x, bool new_x
   }
   
   monitor->setValues(values);
-  monitor->resetConstraints(n_constr);
+  monitor->resetConstraints(nConst, x);
   monitor->waitTillReady();
 
   return true;
