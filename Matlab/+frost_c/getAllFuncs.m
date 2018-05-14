@@ -1,4 +1,4 @@
-function [funcs] = getAllFuncs(solver)
+function [funcs, map] = getAllFuncs(solver)
     import java.util.TreeMap
     
     map = TreeMap;
@@ -24,4 +24,6 @@ function [funcs] = getAllFuncs(solver)
         funcs{i} = itr.next;
         nums(i) = map.get(funcs{i});
     end
+    
+    funcs = sort(funcs);
 end

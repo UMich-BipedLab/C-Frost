@@ -8,6 +8,7 @@
 #include <fstream>
 #include <string>
 
+#include "frost/Document.h"
 #include "frost/IpoptProblem.h"
 #include "frost/JacGEvalSingleThread.h"
 #include "frost/JacGEvalMultiThread.h"
@@ -37,11 +38,8 @@ int main(int argc, const char* argv[])
   rapidjson::Document document;
   getDocument(document, param["data"].as<std::string>());
 
-  assert(document.IsObject());
-  assert(document.HasMember("Constraint"));
-  assert(document.HasMember("Objective"));
-  assert(document.HasMember("Variable"));
-  assert(document.HasMember("Options"));
+  frost::Document new_document;
+  frost::copyFrostDocumentFromRapidJsonDocument(document, new_document);
 
   rapidjson::Document init_document;
   getDocument(init_document, param["initial"].as<std::string>());

@@ -1,4 +1,9 @@
 function [obj] = formulateProblemStructure(solver, funcs)
+    funcs_str = string();
+    for i = 1:length(funcs)
+        funcs_str(i) = string(funcs{i});
+    end
+    
     obj = struct();
     
     % Variable
@@ -22,13 +27,15 @@ function [obj] = formulateProblemStructure(solver, funcs)
     
     obj.Constraint.Funcs = zeros(1, solver.Constraint.numFuncs);
     for i = 1:solver.Constraint.numFuncs
-        [Lia, Locb] = ismember(solver.Constraint.Funcs{i}, funcs);
+        %[Lia, Locb] = ismember(solver.Constraint.Funcs{i}, funcs);
+        Locb = binarySearch(1, length(funcs_str), solver.Constraint.Funcs{i});
         obj.Constraint.Funcs(i) = Locb;
     end
     
     obj.Constraint.JacFuncs = zeros(1, solver.Constraint.numFuncs);
     for i = 1:solver.Constraint.numFuncs
-        [Lia, Locb] = ismember(solver.Constraint.JacFuncs{i}, funcs);
+        %[Lia, Locb] = ismember(solver.Constraint.JacFuncs{i}, funcs);
+        Locb = binarySearch(1, length(funcs_str), solver.Constraint.JacFuncs{i});
         obj.Constraint.JacFuncs(i) = Locb;
     end
     
@@ -130,19 +137,21 @@ function [obj] = formulateProblemStructure(solver, funcs)
     
     obj.Objective.Funcs = zeros(1, solver.Objective.numFuncs);
     for i = 1:solver.Objective.numFuncs
-        [Lia, Locb] = ismember(solver.Objective.Funcs{i}, funcs);
+        %[Lia, Locb] = ismember(solver.Objective.Funcs{i}, funcs);
+        Locb = binarySearch(1, length(funcs_str), solver.Objective.Funcs{i});
         obj.Objective.Funcs(i) = Locb;
     end
     
     obj.Objective.JacFuncs = zeros(1, solver.Objective.numFuncs);
     for i = 1:solver.Objective.numFuncs
-        [Lia, Locb] = ismember(solver.Objective.JacFuncs{i}, funcs);
+        %[Lia, Locb] = ismember(solver.Objective.JacFuncs{i}, funcs);
+        Locb = binarySearch(1, length(funcs_str), solver.Objective.JacFuncs{i});
         obj.Objective.JacFuncs(i) = Locb;
     end
     
     obj.Objective.DepIndices = cell(1, solver.Objective.numFuncs);
     for i = 1:solver.Objective.numFuncs
-        obj.Objective.DepIndices{i} = zeros(0, 1);
+        obj.Objective.DepIndices{i} = [];
         for j = 1:length(solver.Objective.DepIndices{i})
             row = solver.Objective.DepIndices{i}{j};
             if iscolumn(row)
@@ -180,9 +189,32 @@ function [obj] = formulateProblemStructure(solver, funcs)
     end
     obj.Objective = rmfield(obj.Objective, 'LowerBound');
     obj.Objective = rmfield(obj.Objective, 'UpperBound');
+    obj.Objective = rmfield(obj.Objective, 'JacStructFuncs');
     
     
     
     % Options
     obj.Options = solver.Options;
+    
+    function result = binarySearch(a, b, word)
+        if a > b
+            result = 0;
+        elseif a == b
+            if word == funcs_str(a)
+                result = a;
+            else
+                result = 0;
+            end
+        else
+            mid = floor((a + b) / 2);
+            
+            if word == funcs_str(mid)
+                result = mid;
+            elseif word < funcs_str(mid)
+                result = binarySearch(a, mid - 1, word);
+            else
+                result = binarySearch(mid + 1, b, word);
+            end
+        end
+    end
 end
