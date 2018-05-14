@@ -1,20 +1,20 @@
 #include "frost/JacGEvalSingleThread.h"
-#include "rapidjson/document.h"
+#include "frost/Document.h"
 #include "frost/functionlist.hh"
 #include "IpTNLP.hpp"
 
+#include <cassert>
+
 using namespace Ipopt;
-using namespace std;
-using namespace rapidjson;
 
 /** The class constructor function */
-frost::JacGEvalSingleThread::JacGEvalSingleThread(rapidjson::Document &document)
+frost::JacGEvalSingleThread::JacGEvalSingleThread(frost::Document &document)
 {
-  int nVar = document["Variable"]["dimVars"].GetInt();
-  int nConst = document["Constraint"]["numFuncs"].GetInt();
-  int nOut = document["Constraint"]["Dimension"].GetInt();
-  int nJOutConst = document["Constraint"]["nnzJac"].GetInt();
-  int nJOutObj = document["Objective"]["nnzJac"].GetInt();
+  int nVar = document.Variable.dimVars;
+  int nConst = document.Constraint.numFuncs;
+  int nOut = document.Constraint.Dimension;
+  int nJOutConst = document.Constraint.nnzJac;
+  int nJOutObj = document.Objective.nnzJac;
 
   this->n_var = nVar;
   this->n_constr = nOut;
@@ -36,7 +36,7 @@ bool frost::JacGEvalSingleThread::eval_jac_g(Index n, const Number* x, bool new_
                                      Index m, Index nele_jac, Index* iRow, Index *jCol,
                                      Number* values)
 {
-  int nConst = (*document)["Constraint"]["numFuncs"].GetInt();
+  int nConst = (*document).Constraint.numFuncs;
 
   assert(n == n_var);
   assert(m == n_constr);
@@ -49,55 +49,26 @@ bool frost::JacGEvalSingleThread::eval_jac_g(Index n, const Number* x, bool new_
 
   for (int i = 0; i < nConst; i++)
   {
-    if ((*document)["Constraint"]["nzJacIndices"][i].IsNull())
-      continue;
-
-    int fIdx = (*document)["Constraint"]["JacFuncs"][i].GetInt() - 1;
-    int numDep = 0;
-    if ((*document)["Constraint"]["DepIndices"][i].IsArray())
+    int fIdx = (*document).Constraint.JacFuncs[i] - 1;
+    int numDep = (*document).Constraint.DepIndices[i].size();
+    for (int j = 0; j < numDep; j++)
     {
-      numDep = (*document)["Constraint"]["DepIndices"][i].Size();
-      for (int j = 0; j < numDep; j++)
-      {
-        in[j] = x[(*document)["Constraint"]["DepIndices"][i][j].GetInt() - 1];
-      }
-    }
-    else if ((*document)["Constraint"]["DepIndices"][i].IsNull() == false)
-    {
-      numDep = 1;
-      in[0] = x[(*document)["Constraint"]["DepIndices"][i].GetInt() - 1];
+      in[j] = x[(*document).Constraint.DepIndices[i][j] - 1];
     }
 
-    int numAux = 0;
-    if ((*document)["Constraint"]["AuxData"][i].IsArray())
+    int numAux = (*document).Constraint.AuxData[i].size();
+    for (int j = 0; j < numAux; j++)
     {
-      numAux = (*document)["Constraint"]["AuxData"][i].Size();
-      for (int j = 0; j < numAux; j++)
-      {
-        in[j + numDep] = (*document)["Constraint"]["AuxData"][i][j].GetDouble();
-      }
-    }
-    else if ((*document)["Constraint"]["AuxData"][i].IsNull() == false)
-    {
-      numAux = 1;
-      in[0 + numDep] = (*document)["Constraint"]["AuxData"][i].GetDouble();
+      in[j + numDep] = (*document).Constraint.AuxData[i][j];
     }
 
     frost::functions[fIdx](out, in);
 
     int numConst = 0;
-    if ((*document)["Constraint"]["nzJacIndices"][i].IsArray())
+    numConst = (*document).Constraint.nzJacIndices[i].size();
+    for (int j = 0; j < numConst; j++)
     {
-      numConst = (*document)["Constraint"]["nzJacIndices"][i].Size();
-      for (int j = 0; j < numConst; j++)
-      {
-        values[(*document)["Constraint"]["nzJacIndices"][i][j].GetInt() - 1] += out[j];
-      }
-    }
-    else if ((*document)["Constraint"]["FuncIndices"][i].IsNull() == false)
-    {
-      numConst = 1;
-      values[(*document)["Constraint"]["nzJacIndices"][i].GetInt() - 1] += out[0];
+      values[(*document).Constraint.nzJacIndices[i][j] - 1] += out[j];
     }
   }
 

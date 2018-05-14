@@ -1,4 +1,4 @@
-#include "rapidjson/document.h"
+#include "frost/Document.h"
 #include "frost/functionlist.hh"
 #include "frost/IpoptProblem.h"
 #include "IpTNLP.hpp"
@@ -7,19 +7,20 @@
 #include <fstream>
 #include <string>
 #include <cstdio>
+#include <cstring>
+#include <cassert>
 
 using namespace Ipopt;
 using namespace std;
-using namespace rapidjson;
 
 /** The class constructor function */
-frost::FROST_SOLVER::FROST_SOLVER(rapidjson::Document &document, const double *x0, frost::JacGEvalAbstract *jacGEval)
+frost::FROST_SOLVER::FROST_SOLVER(frost::Document &document, const double *x0, frost::JacGEvalAbstract *jacGEval)
 {
-  int nVar = document["Variable"]["dimVars"].GetInt();
-  int nConst = document["Constraint"]["numFuncs"].GetInt();
-  int nOut = document["Constraint"]["Dimension"].GetInt();
-  int nJOutConst = document["Constraint"]["nnzJac"].GetInt();
-  int nJOutObj = document["Objective"]["nnzJac"].GetInt();
+  int nVar = document.Variable.dimVars;
+  int nConst = document.Constraint.numFuncs;
+  int nOut = document.Constraint.Dimension;
+  int nJOutConst = document.Constraint.nnzJac;
+  int nJOutObj = document.Objective.nnzJac;
 
   this->in = new Number[nJOutConst];
   this->out = new Number[nJOutConst];
@@ -41,16 +42,16 @@ frost::FROST_SOLVER::FROST_SOLVER(rapidjson::Document &document, const double *x
   this->x_u = new Number[nVar];
   for (int i = 0; i < nVar; i++)
   {
-    this->x_l[i] = document["Variable"]["lb"][i].GetDouble();
-    this->x_u[i] = document["Variable"]["ub"][i].GetDouble();
+    this->x_l[i] = document.Variable.lb[i];
+    this->x_u[i] = document.Variable.ub[i];
   }
 
   this->g_l = new Number[nOut];
   this->g_u = new Number[nOut];
   for (int i = 0; i < nOut; i++)
   {
-    this->g_l[i] = document["Constraint"]["LowerBound"][i].GetDouble();
-    this->g_u[i] = document["Constraint"]["UpperBound"][i].GetDouble();
+    this->g_l[i] = document.Constraint.LowerBound[i];
+    this->g_u[i] = document.Constraint.UpperBound[i];
   }
 
   // outputs
@@ -177,7 +178,7 @@ void frost::FROST_SOLVER::finalize_solution(SolverReturn status,
 bool frost::FROST_SOLVER::eval_g(Index n, const Number* x, bool new_x, Index m, Number* g)
 {
 
-  int nConst = (*document)["Constraint"]["numFuncs"].GetInt();
+  int nConst = (*document).Constraint.numFuncs;
 
   assert(n == n_var);
   assert(m == n_constr);
@@ -187,52 +188,25 @@ bool frost::FROST_SOLVER::eval_g(Index n, const Number* x, bool new_x, Index m, 
 
   for (int i = 0; i < nConst; i++)
   {
-    int fIdx = (*document)["Constraint"]["Funcs"][i].GetInt() - 1;
-    int numDep = 0;
-    if ((*document)["Constraint"]["DepIndices"][i].IsArray())
+    int fIdx = (*document).Constraint.Funcs[i] - 1;
+    int numDep = (*document).Constraint.DepIndices[i].size();
+    for (int j = 0; j < numDep; j++)
     {
-      numDep = (*document)["Constraint"]["DepIndices"][i].Size();
-      for (int j = 0; j < numDep; j++)
-      {
-        in[j] = x[(*document)["Constraint"]["DepIndices"][i][j].GetInt() - 1];
-      }
-    }
-    else if ((*document)["Constraint"]["DepIndices"][i].IsNull() == false)
-    {
-      numDep = 1;
-      in[0] = x[(*document)["Constraint"]["DepIndices"][i].GetInt() - 1];
+      in[j] = x[(*document).Constraint.DepIndices[i][j] - 1];
     }
 
-    int numAux = 0;
-    if ((*document)["Constraint"]["AuxData"][i].IsArray())
+    int numAux = (*document).Constraint.AuxData[i].size();
+    for (int j = 0; j < numAux; j++)
     {
-      numAux = (*document)["Constraint"]["AuxData"][i].Size();
-      for (int j = 0; j < numAux; j++)
-      {
-        in[j + numDep] = (*document)["Constraint"]["AuxData"][i][j].GetDouble();
-      }
-    }
-    else if ((*document)["Constraint"]["AuxData"][i].IsNull() == false)
-    {
-      numAux = 1;
-      in[0 + numDep] = (*document)["Constraint"]["AuxData"][i].GetDouble();
+      in[j + numDep] = (*document).Constraint.AuxData[i][j];
     }
 
     frost::functions[fIdx](out, in);
 
-    int numConst = 0;
-    if ((*document)["Constraint"]["FuncIndices"][i].IsArray())
+    int numConst = (*document).Constraint.FuncIndices[i].size();
+    for (int j = 0; j < numConst; j++)
     {
-      numConst = (*document)["Constraint"]["FuncIndices"][i].Size();
-      for (int j = 0; j < numConst; j++)
-      {
-        g[(*document)["Constraint"]["FuncIndices"][i][j].GetInt() - 1] += out[j];
-      }
-    }
-    else if ((*document)["Constraint"]["FuncIndices"][i].IsNull() == false)
-    {
-      numConst = 1;
-      g[(*document)["Constraint"]["FuncIndices"][i].GetInt() - 1] += out[0];
+      g[(*document).Constraint.FuncIndices[i][j] - 1] += out[j];
     }
   }
 
@@ -241,7 +215,7 @@ bool frost::FROST_SOLVER::eval_g(Index n, const Number* x, bool new_x, Index m, 
 
 bool frost::FROST_SOLVER::eval_f(Index n, const Number* x, bool new_x, Number& obj_value)
 {
-  int nConst = (*document)["Objective"]["numFuncs"].GetInt();
+  int nConst = (*document).Objective.numFuncs;
 
   assert(n == n_var);
 
@@ -249,52 +223,27 @@ bool frost::FROST_SOLVER::eval_f(Index n, const Number* x, bool new_x, Number& o
 
   for (int i = 0; i < nConst; i++)
   {
-    int fIdx = (*document)["Objective"]["Funcs"][i].GetInt() - 1;
+    int fIdx = (*document).Objective.Funcs[i] - 1;
     int numDep = 0;
-    if ((*document)["Objective"]["DepIndices"][i].IsArray())
+    numDep = (*document).Objective.DepIndices[i].size();
+    for (int j = 0; j < numDep; j++)
     {
-      numDep = (*document)["Objective"]["DepIndices"][i].Size();
-      for (int j = 0; j < numDep; j++)
-      {
-        in[j] = x[(*document)["Objective"]["DepIndices"][i][j].GetInt() - 1];
-      }
-    }
-    else if ((*document)["Objective"]["DepIndices"][i].IsNull() == false)
-    {
-      numDep = 1;
-      in[0] = x[(*document)["Objective"]["DepIndices"][i].GetInt() - 1];
+      in[j] = x[(*document).Objective.DepIndices[i][j] - 1];
     }
 
-    int numAux = 0;
-    if ((*document)["Objective"]["AuxData"][i].IsArray())
+    int numAux = (*document).Objective.AuxData[i].size();
+    for (int j = 0; j < numAux; j++)
     {
-      numAux = (*document)["Objective"]["AuxData"][i].Size();
-      for (int j = 0; j < numAux; j++)
-      {
-        in[j + numDep] = (*document)["Objective"]["AuxData"][i][j].GetDouble();
-      }
-    }
-    else if ((*document)["Objective"]["AuxData"][i].IsNull() == false)
-    {
-      numAux = 1;
-      in[0 + numDep] = (*document)["Objective"]["AuxData"][i].GetDouble();
+      in[j + numDep] = (*document).Objective.AuxData[i][j];
     }
 
     frost::functions[fIdx](out, in);
 
     int numConst = 0;
-    if ((*document)["Objective"]["FuncIndices"][i].IsArray())
+    numConst = (*document).Objective.FuncIndices[i].size();
+    for (int j = 0; j < numConst; j++)
     {
-      numConst = (*document)["Objective"]["FuncIndices"][i].Size();
-      for (int j = 0; j < numConst; j++)
-      {
-        obj_value += out[j];
-      }
-    }
-    else if ((*document)["Objective"]["FuncIndices"][i].IsNull() == false)
-    {
-      numConst = 1;
-      obj_value += out[0];
+      obj_value += out[j];
     }
   }
 
@@ -310,8 +259,8 @@ bool frost::FROST_SOLVER::eval_jac_g(Index n, const Number* x, bool new_x,
   {
     for (int i = 0; i < nnz_jac_g; i++)
     {
-      iRow[i] = (*document)["Constraint"]["nzJacRows"][i].GetInt() - 1;
-      jCol[i] = (*document)["Constraint"]["nzJacCols"][i].GetInt() - 1;
+      iRow[i] = (*document).Constraint.nzJacRows[i] - 1;
+      jCol[i] = (*document).Constraint.nzJacCols[i] - 1;
     }
 
     return true;
@@ -324,9 +273,9 @@ bool frost::FROST_SOLVER::eval_jac_g(Index n, const Number* x, bool new_x,
 
 bool frost::FROST_SOLVER::eval_grad_f(Index n, const Number* x, bool new_x, Number* grad_f)
 {
-  int n_var = (*document)["Variable"]["dimVars"].GetInt();
-  int nConst = (*document)["Objective"]["numFuncs"].GetInt();
-  int nJOut = (*document)["Objective"]["nnzJac"].GetInt();
+  int n_var = (*document).Variable.dimVars;
+  int nConst = (*document).Objective.numFuncs;
+  int nJOut = (*document).Objective.nnzJac;
 
   assert(n == n_var);
 
@@ -337,60 +286,28 @@ bool frost::FROST_SOLVER::eval_grad_f(Index n, const Number* x, bool new_x, Numb
 
   for (int i = 0; i < nConst; i++)
   {
-    if ((*document)["Objective"]["nzJacIndices"][i].IsNull())
-      continue;
-
-    int fIdx = (*document)["Objective"]["JacFuncs"][i].GetInt() - 1;
+    int fIdx = (*document).Objective.JacFuncs[i] - 1;
     int numDep = 0;
-    if ((*document)["Objective"]["DepIndices"][i].IsArray())
+    numDep = (*document).Objective.DepIndices[i].size();
+    for (int j = 0; j < numDep; j++)
     {
-      numDep = (*document)["Objective"]["DepIndices"][i].Size();
-      for (int j = 0; j < numDep; j++)
-      {
-        in[j] = x[(*document)["Objective"]["DepIndices"][i][j].GetInt() - 1];
-      }
-    }
-    else if ((*document)["Objective"]["DepIndices"][i].IsNull() == false)
-    {
-      numDep = 1;
-      in[0] = x[(*document)["Objective"]["DepIndices"][i].GetInt() - 1];
+      in[j] = x[(*document).Objective.DepIndices[i][j] - 1];
     }
 
-    int numAux = 0;
-    if ((*document)["Objective"]["AuxData"][i].IsArray())
+    int numAux = (*document).Objective.AuxData[i].size();
+    for (int j = 0; j < numAux; j++)
     {
-      numAux = (*document)["Objective"]["AuxData"][i].Size();
-      for (int j = 0; j < numAux; j++)
-      {
-        in[j + numDep] = (*document)["Objective"]["AuxData"][i][j].GetDouble();
-      }
-    }
-    else if ((*document)["Objective"]["AuxData"][i].IsNull() == false)
-    {
-      numAux = 1;
-      in[0 + numDep] = (*document)["Objective"]["AuxData"][i].GetDouble();
+      in[j + numDep] = (*document).Objective.AuxData[i][j];
     }
 
     frost::functions[fIdx](out, in);
 
-    int numConst = 0;
-    if ((*document)["Objective"]["nzJacIndices"][i].IsArray())
+    int numConst = (*document).Objective.nzJacIndices[i].size();
+    for (int j = 0; j < numConst; j++)
     {
-      numConst = (*document)["Objective"]["nzJacIndices"][i].Size();
-      for (int j = 0; j < numConst; j++)
-      {
-        int flIdx = (*document)["Objective"]["nzJacIndices"][i][j].GetInt() - 1;
-        int index = (*document)["Objective"]["nzJacCols"][flIdx].GetInt() - 1;
-        grad_f[index] += out[j];
-
-      }
-    }
-    else if ((*document)["Objective"]["FuncIndices"][i].IsNull() == false)
-    {
-      numConst = 1;
-      int flIdx = (*document)["Objective"]["nzJacIndices"][i].GetInt() - 1;
-      int index = (*document)["Objective"]["nzJacCols"][flIdx].GetInt() - 1;
-      grad_f[index] += out[0];
+      int flIdx = (*document).Objective.nzJacIndices[i][j] - 1;
+      int index = (*document).Objective.nzJacCols[flIdx] - 1;
+      grad_f[index] += out[j];
     }
   }
 

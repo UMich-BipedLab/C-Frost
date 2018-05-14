@@ -53,9 +53,9 @@ int main(int argc, const char* argv[])
   //  (use a SmartPtr, not raw)
   frost::FROST_SOLVER* frost_nlp;
   if (param["threads"].as<int>() == 1)
-    frost_nlp = new  frost::FROST_SOLVER(document, x0, new frost::JacGEvalSingleThread(document));
+    frost_nlp = new  frost::FROST_SOLVER(new_document, x0, new frost::JacGEvalSingleThread(new_document));
   else
-    frost_nlp = new  frost::FROST_SOLVER(document, x0, new frost::JacGEvalMultiThread(document, param["threads"].as<int>()));
+    frost_nlp = new  frost::FROST_SOLVER(new_document, x0, new frost::JacGEvalMultiThread(new_document, param["threads"].as<int>()));
   
   SmartPtr<TNLP> nlp = frost_nlp;
   delete []x0;
@@ -220,11 +220,11 @@ void copyFrostDocumentFromRapidJsonDocument(rapidjson::Document &rapidDocument, 
     assert(rapidDocument.HasMember("Options"));
 
     // Copying Variable data
-    document.Varaible.dimVars = rapidDocument["Variable"]["dimVars"].GetInt();
+    document.Variable.dimVars = rapidDocument["Variable"]["dimVars"].GetInt();
     for (unsigned int i = 0; i < rapidDocument["Variable"]["lb"].Size(); i++)
-        document.Varaible.lb.push_back(rapidDocument["Variable"]["lb"][i].GetDouble());
+        document.Variable.lb.push_back(rapidDocument["Variable"]["lb"][i].GetDouble());
     for (unsigned int i = 0; i < rapidDocument["Variable"]["ub"].Size(); i++)
-        document.Varaible.ub.push_back(rapidDocument["Variable"]["ub"][i].GetDouble());
+        document.Variable.ub.push_back(rapidDocument["Variable"]["ub"][i].GetDouble());
 
     // Copying Constraint data
     document.Constraint.numFuncs = rapidDocument["Constraint"]["numFuncs"].GetInt();
@@ -247,25 +247,16 @@ void copyFrostDocumentFromRapidJsonDocument(rapidjson::Document &rapidDocument, 
     }
     for (unsigned int i = 0; i < rapidDocument["Constraint"]["AuxData"].Size(); i++)
     {
-        std::vector<double> v1;
-        std::vector<bool> v2;
-        document.Constraint.AuxData.push_back(v1);
-        document.Constraint.AuxDataIsNull.push_back(v2);
+        std::vector<double> v;
+        document.Constraint.AuxData.push_back(v);
         if (rapidDocument["Constraint"]["AuxData"][i].IsArray())
+        {
             for (unsigned int j = 0; j < rapidDocument["Constraint"]["AuxData"][i].Size(); j++)
-            {
                 document.Constraint.AuxData[i].push_back(rapidDocument["Constraint"]["AuxData"][i][j].GetDouble());
-                document.Constraint.AuxDataIsNull[i].push_back(false);
-            }
+        }
         else if (rapidDocument["Constraint"]["AuxData"][i].IsNull() == false)
         {
             document.Constraint.AuxData[i].push_back(rapidDocument["Constraint"]["AuxData"][i].GetDouble());
-            document.Constraint.AuxDataIsNull[i].push_back(false);
-        }
-        else
-        {
-            document.Constraint.AuxData[i].push_back(0);
-            document.Constraint.AuxDataIsNull[i].push_back(true);
         }
     }
     for (unsigned int i = 0; i < rapidDocument["Constraint"]["FuncIndices"].Size(); i++)
@@ -317,25 +308,16 @@ void copyFrostDocumentFromRapidJsonDocument(rapidjson::Document &rapidDocument, 
     }
     for (unsigned int i = 0; i < rapidDocument["Objective"]["AuxData"].Size(); i++)
     {
-        std::vector<double> v1;
-        std::vector<bool> v2;
-        document.Objective.AuxData.push_back(v1);
-        document.Objective.AuxDataIsNull.push_back(v2);
+        std::vector<double> v;
+        document.Objective.AuxData.push_back(v);
         if (rapidDocument["Objective"]["AuxData"][i].IsArray())
+        {
             for (unsigned int j = 0; j < rapidDocument["Objective"]["AuxData"][i].Size(); j++)
-            {
                 document.Objective.AuxData[i].push_back(rapidDocument["Objective"]["AuxData"][i][j].GetDouble());
-                document.Objective.AuxDataIsNull[i].push_back(false);
-            }
+        }
         else if (rapidDocument["Objective"]["AuxData"][i].IsNull() == false)
         {
             document.Objective.AuxData[i].push_back(rapidDocument["Objective"]["AuxData"][i].GetDouble());
-            document.Objective.AuxDataIsNull[i].push_back(false);
-        }
-        else
-        {
-            document.Objective.AuxData[i].push_back(0);
-            document.Objective.AuxDataIsNull[i].push_back(true);
         }
     }
     for (unsigned int i = 0; i < rapidDocument["Objective"]["FuncIndices"].Size(); i++)

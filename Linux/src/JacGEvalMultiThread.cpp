@@ -1,5 +1,5 @@
 #include "frost/JacGEvalMultiThread.h"
-#include "rapidjson/document.h"
+#include "frost/Document.h"
 #include "frost/functionlist.hh"
 #include "IpTNLP.hpp"
 
@@ -8,17 +8,17 @@
 #include <mutex>
 #include <vector>
 #include <condition_variable>
+#include <cassert>
 
 using namespace Ipopt;
 using namespace std;
-using namespace rapidjson;
 
 namespace frost
 {
   class JacGEvalMultiThread_worker
   {
   public:
-    JacGEvalMultiThread_worker(int nJOutConst, frost::MyMonitor *monitor, rapidjson::Document *document);
+    JacGEvalMultiThread_worker(int nJOutConst, frost::MyMonitor *monitor, frost::Document *document);
     ~JacGEvalMultiThread_worker();
     void start();
     void Compute();
@@ -27,7 +27,7 @@ namespace frost
     Number *in;  // temporary input variables
     Number *out; // temporary function outputs
     frost::MyMonitor *monitor;
-    rapidjson::Document *document;
+    frost::Document *document;
     std::thread *th;
   };
 }
@@ -35,7 +35,7 @@ namespace frost
 class frost::MyMonitor
 {
 public:
-  MyMonitor(int numThreads, int nJOutConst, rapidjson::Document *document);
+  MyMonitor(int numThreads, int nJOutConst, frost::Document *document);
   ~MyMonitor();
   void resetConstraints(int num_of_const, const Number* x);
   void setValues(Number* values);
@@ -53,12 +53,12 @@ private:
   std::condition_variable queue_available;
   Number* values;
   const Number *x;
-  rapidjson::Document *document;
+  frost::Document *document;
   std::vector<frost::JacGEvalMultiThread_worker*> thread_obj;
   bool done;
 };
 
-frost::JacGEvalMultiThread_worker::JacGEvalMultiThread_worker(int nJOutConst, frost::MyMonitor *monitor, rapidjson::Document *document)
+frost::JacGEvalMultiThread_worker::JacGEvalMultiThread_worker(int nJOutConst, frost::MyMonitor *monitor, frost::Document *document)
 {
   this->in = new Number[nJOutConst];
   this->out = new Number[nJOutConst];
@@ -91,45 +91,25 @@ void frost::JacGEvalMultiThread_worker::Compute()
 
     if (i < 0)
       break;
-    
-    //std::cout<<"a "<<(*document)["Constraint"]["numFuncs"].GetInt()<<std::endl;
 
-    if ((*document)["Constraint"]["nzJacIndices"][i].IsNull())
-    {
-      monitor->updateValues(out, -1);
-      continue;
-    }
+    //if ((*document).Constraint.nzJacIndices[i].IsNull())
+    //{
+    //  monitor->updateValues(out, -1);
+    //  continue;
+    //}
 
-    int fIdx = (*document)["Constraint"]["JacFuncs"][i].GetInt() - 1;
-    int numDep = 0;
-    if ((*document)["Constraint"]["DepIndices"][i].IsArray())
+    int fIdx = (*document).Constraint.JacFuncs[i] - 1;
+    int numDep = (*document).Constraint.DepIndices[i].size();
+    for (int j = 0; j < numDep; j++)
     {
-      numDep = (*document)["Constraint"]["DepIndices"][i].Size();
-      for (int j = 0; j < numDep; j++)
-      {
-        in[j] = x[(*document)["Constraint"]["DepIndices"][i][j].GetInt() - 1];
-      }
-    }
-    else if ((*document)["Constraint"]["DepIndices"][i].IsNull() == false)
-    {
-      numDep = 1;
-      in[0] = x[(*document)["Constraint"]["DepIndices"][i].GetInt() - 1];
+      in[j] = x[(*document).Constraint.DepIndices[i][j] - 1];
     }
 
     //std::cout<<"b"<<std::endl;
-    int numAux = 0;
-    if ((*document)["Constraint"]["AuxData"][i].IsArray())
+    int numAux = (*document).Constraint.AuxData[i].size();
+    for (int j = 0; j < numAux; j++)
     {
-      numAux = (*document)["Constraint"]["AuxData"][i].Size();
-      for (int j = 0; j < numAux; j++)
-      {
-        in[j + numDep] = (*document)["Constraint"]["AuxData"][i][j].GetDouble();
-      }
-    }
-    else if ((*document)["Constraint"]["AuxData"][i].IsNull() == false)
-    {
-      numAux = 1;
-      in[0 + numDep] = (*document)["Constraint"]["AuxData"][i].GetDouble();
+      in[j + numDep] = (*document).Constraint.AuxData[i][j];
     }
 
     frost::functions[fIdx](out, in);
@@ -139,7 +119,7 @@ void frost::JacGEvalMultiThread_worker::Compute()
   }
 }
 
-frost::MyMonitor::MyMonitor(int numThreads, int nJOutConst, rapidjson::Document *document)
+frost::MyMonitor::MyMonitor(int numThreads, int nJOutConst, frost::Document *document)
 {
   this->document = document;
 
@@ -210,19 +190,10 @@ void frost::MyMonitor::updateValues(Number *out, int i)
 
   if (i >= 0)
   {
-    int numConst = 0;
-    if ((*document)["Constraint"]["nzJacIndices"][i].IsArray())
+    int numConst = (*document).Constraint.nzJacIndices[i].size();
+    for (int j = 0; j < numConst; j++)
     {
-      numConst = (*document)["Constraint"]["nzJacIndices"][i].Size();
-      for (int j = 0; j < numConst; j++)
-      {
-        values[(*document)["Constraint"]["nzJacIndices"][i][j].GetInt() - 1] += out[j];
-      }
-    }
-    else if ((*document)["Constraint"]["FuncIndices"][i].IsNull() == false)
-    {
-      numConst = 1;
-      values[(*document)["Constraint"]["nzJacIndices"][i].GetInt() - 1] += out[0];
+      values[(*document).Constraint.nzJacIndices[i][j] - 1] += out[j];
     }
   }
 
@@ -253,13 +224,13 @@ const Number * frost::MyMonitor::getX()
 }
 
 /** The class constructor function */
-frost::JacGEvalMultiThread::JacGEvalMultiThread(rapidjson::Document &document, int nThreads)
+frost::JacGEvalMultiThread::JacGEvalMultiThread(frost::Document &document, int nThreads)
 {
-  int nVar = document["Variable"]["dimVars"].GetInt();
-  int nConst = document["Constraint"]["numFuncs"].GetInt();
-  int nOut = document["Constraint"]["Dimension"].GetInt();
-  int nJOutConst = document["Constraint"]["nnzJac"].GetInt();
-  int nJOutObj = document["Objective"]["nnzJac"].GetInt();
+  int nVar = document.Variable.dimVars;
+  int nConst = document.Constraint.numFuncs;
+  int nOut = document.Constraint.Dimension;
+  int nJOutConst = document.Constraint.nnzJac;
+  int nJOutObj = document.Objective.nnzJac;
 
   this->n_var = nVar;
   this->n_constr = nOut;
@@ -279,7 +250,7 @@ bool frost::JacGEvalMultiThread::eval_jac_g(Index n, const Number* x, bool new_x
                                      Index m, Index nele_jac, Index* iRow, Index *jCol,
                                      Number* values)
 {
-  int nConst = (*document)["Constraint"]["numFuncs"].GetInt();
+  int nConst = (*document).Constraint.numFuncs;
 
   assert(n == n_var);
   assert(m == n_constr);

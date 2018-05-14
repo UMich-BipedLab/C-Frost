@@ -19,7 +19,6 @@ namespace frost
             std::vector<int> JacFuncs;
             std::vector< std::vector<int> > DepIndices;
             std::vector< std::vector<double> > AuxData;
-            std::vector< std::vector<bool> > AuxDataIsNull;
             std::vector< std::vector<int> > FuncIndices;
             std::vector<int> nzJacRows;
             std::vector<int> nzJacCols;
@@ -29,7 +28,7 @@ namespace frost
             std::vector<double> UpperBound;
         };
         
-        VariableStruct Varaible;
+        VariableStruct Variable;
         ConstraintStruct Constraint;
         ConstraintStruct Objective;
     };

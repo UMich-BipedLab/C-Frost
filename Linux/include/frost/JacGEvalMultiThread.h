@@ -2,10 +2,9 @@
 #define JACGEVALMULTITHREAD_H
 
 #include "frost/JacGEvalAbstract.h"
-#include "rapidjson/document.h"
+#include "frost/Document.h"
 #include "IpTNLP.hpp"
 
-#include <queue>
 #include <mutex>
 #include <condition_variable>
 
@@ -20,14 +19,14 @@ class MyMonitor;
 class JacGEvalMultiThread : public JacGEvalAbstract
 {
 public:
-  JacGEvalMultiThread(rapidjson::Document &document, int nThreads);
+  JacGEvalMultiThread(frost::Document &document, int nThreads);
   virtual ~JacGEvalMultiThread();
   virtual bool eval_jac_g(Index n, const Number *x, bool new_x,
                           Index m, Index nele_jac, Index *iRow, Index *jCol,
                           Number *values);
 
 public:
-  rapidjson::Document *document;
+  frost::Document *document;
   std::mutex lock;
   std::condition_variable signal_done;
 
