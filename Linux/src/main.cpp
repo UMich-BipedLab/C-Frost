@@ -282,7 +282,7 @@ void updateData(rapidjson::Document &rapidDocument, frost::Document &document)
         if (rapidDocument["Constraint"]["nzJacIndices"][i].IsArray())
             for (unsigned int j = 0; j < rapidDocument["Constraint"]["nzJacIndices"][i].Size(); j++)
                 document.Constraint.nzJacIndices[i].push_back(rapidDocument["Constraint"]["nzJacIndices"][i][j].GetInt());
-        else
+        else if (rapidDocument["Constraint"]["nzJacIndices"][i].IsNull() == false)
             document.Constraint.nzJacIndices[i].push_back(rapidDocument["Constraint"]["nzJacIndices"][i].GetInt());
     }
     document.Constraint.Dimension = rapidDocument["Constraint"]["Dimension"].GetInt();
@@ -339,7 +339,7 @@ void updateData(rapidjson::Document &rapidDocument, frost::Document &document)
         if (rapidDocument["Objective"]["nzJacIndices"][i].IsArray())
             for (unsigned int j = 0; j < rapidDocument["Objective"]["nzJacIndices"][i].Size(); j++)
                 document.Objective.nzJacIndices[i].push_back(rapidDocument["Objective"]["nzJacIndices"][i][j].GetInt());
-        else
+        else if (rapidDocument["Objective"]["nzJacIndices"][i].IsNull() == false)
             document.Objective.nzJacIndices[i].push_back(rapidDocument["Objective"]["nzJacIndices"][i].GetInt());
     }
     document.Objective.Dimension = rapidDocument["Objective"]["Dimension"].GetInt();
