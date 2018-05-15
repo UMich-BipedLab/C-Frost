@@ -18,6 +18,8 @@ using namespace std;
 using namespace rapidjson;
 
 void getDocument(rapidjson::Document &document, const std::string &fileName);
+void updateData(rapidjson::Document &rapidDocument, frost::Document &document);
+void updateBounds(rapidjson::Document &rapidDocument, frost::Document &document);
 void copyFrostDocumentFromRapidJsonDocument(rapidjson::Document &rapidDocument, frost::Document &document);
 void exportOutput(const frost::FROST_SOLVER *solver, const std::string &fileName);
 void exportSolution(const frost::FROST_SOLVER *solver, const std::string &fileName);
@@ -29,6 +31,7 @@ int main(int argc, const char* argv[])
   ("options", "Ipopt options file", cxxopts::value<std::string>())
   ("initial", "Initial condition file (json)", cxxopts::value<std::string>())
   ("data", "Data file (json)", cxxopts::value<std::string>())
+  ("bounds", "Bounds file (json)", cxxopts::value<std::string>())
   ("output", "Output file (json)", cxxopts::value<std::string>())
   ("solution", "Solution output file (json)", cxxopts::value<std::string>())
   ("threads", "Number of threads (default=1)", cxxopts::value<int>()->default_value("1"));
@@ -37,9 +40,12 @@ int main(int argc, const char* argv[])
   
   rapidjson::Document document;
   getDocument(document, param["data"].as<std::string>());
+  rapidjson::Document bounds;
+  getDocument(bounds, param["bounds"].as<std::string>());
 
   frost::Document new_document;
-  copyFrostDocumentFromRapidJsonDocument(document, new_document);
+  updateData(document, new_document);
+  updateBounds(bounds, new_document);
 
   rapidjson::Document init_document;
   getDocument(init_document, param["initial"].as<std::string>());
@@ -211,7 +217,7 @@ void exportSolution(const frost::FROST_SOLVER *solver, const std::string &fileNa
 
 }
 
-void copyFrostDocumentFromRapidJsonDocument(rapidjson::Document &rapidDocument, frost::Document &document)
+void updateData(rapidjson::Document &rapidDocument, frost::Document &document)
 {
     assert(rapidDocument.IsObject());
     assert(rapidDocument.HasMember("Constraint"));
@@ -221,10 +227,6 @@ void copyFrostDocumentFromRapidJsonDocument(rapidjson::Document &rapidDocument, 
 
     // Copying Variable data
     document.Variable.dimVars = rapidDocument["Variable"]["dimVars"].GetInt();
-    for (unsigned int i = 0; i < rapidDocument["Variable"]["lb"].Size(); i++)
-        document.Variable.lb.push_back(rapidDocument["Variable"]["lb"][i].GetDouble());
-    for (unsigned int i = 0; i < rapidDocument["Variable"]["ub"].Size(); i++)
-        document.Variable.ub.push_back(rapidDocument["Variable"]["ub"][i].GetDouble());
 
     // Copying Constraint data
     document.Constraint.numFuncs = rapidDocument["Constraint"]["numFuncs"].GetInt();
@@ -284,10 +286,6 @@ void copyFrostDocumentFromRapidJsonDocument(rapidjson::Document &rapidDocument, 
             document.Constraint.nzJacIndices[i].push_back(rapidDocument["Constraint"]["nzJacIndices"][i].GetInt());
     }
     document.Constraint.Dimension = rapidDocument["Constraint"]["Dimension"].GetInt();
-    for (unsigned int i = 0; i < rapidDocument["Constraint"]["LowerBound"].Size(); i++)
-        document.Constraint.LowerBound.push_back(rapidDocument["Constraint"]["LowerBound"][i].GetDouble());
-    for (unsigned int i = 0; i < rapidDocument["Constraint"]["UpperBound"].Size(); i++)
-        document.Constraint.UpperBound.push_back(rapidDocument["Constraint"]["UpperBound"][i].GetDouble());
 
     // Copying Objective data
     document.Objective.numFuncs = rapidDocument["Objective"]["numFuncs"].GetInt();
@@ -345,4 +343,24 @@ void copyFrostDocumentFromRapidJsonDocument(rapidjson::Document &rapidDocument, 
             document.Objective.nzJacIndices[i].push_back(rapidDocument["Objective"]["nzJacIndices"][i].GetInt());
     }
     document.Objective.Dimension = rapidDocument["Objective"]["Dimension"].GetInt();
+}
+
+
+void updateBounds(rapidjson::Document &rapidDocument, frost::Document &document)
+{
+    assert(rapidDocument.IsObject());
+    assert(rapidDocument.HasMember("Constraint"));
+    assert(rapidDocument.HasMember("Variable"));
+
+    // Copying Variable data
+    for (unsigned int i = 0; i < rapidDocument["Variable"]["lb"].Size(); i++)
+        document.Variable.lb.push_back(rapidDocument["Variable"]["lb"][i].GetDouble());
+    for (unsigned int i = 0; i < rapidDocument["Variable"]["ub"].Size(); i++)
+        document.Variable.ub.push_back(rapidDocument["Variable"]["ub"][i].GetDouble());
+
+    // Copying Constraint data
+    for (unsigned int i = 0; i < rapidDocument["Constraint"]["LowerBound"].Size(); i++)
+        document.Constraint.LowerBound.push_back(rapidDocument["Constraint"]["LowerBound"][i].GetDouble());
+    for (unsigned int i = 0; i < rapidDocument["Constraint"]["UpperBound"].Size(); i++)
+        document.Constraint.UpperBound.push_back(rapidDocument["Constraint"]["UpperBound"][i].GetDouble());
 }

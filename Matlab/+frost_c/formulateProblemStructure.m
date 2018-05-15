@@ -7,20 +7,10 @@ function [obj] = formulateProblemStructure(solver, funcs)
     obj = struct();
     
     % Variable
-    [dimVars, lb, ub] = getVarInfo(solver.Nlp);
-    if iscolumn(lb)
-        lb = lb';
-    end
-    if iscolumn(ub)
-        ub = ub';
-    end
+    [dimVars, ~, ~] = getVarInfo(solver.Nlp);
     
     obj.Variable = struct();
     obj.Variable.dimVars = dimVars;
-    lb(lb == -Inf) = -1e6;
-    obj.Variable.lb = lb;
-    ub(ub == Inf) = 1e6;
-    obj.Variable.ub = ub;
     
     % Constraints
     obj.Constraint = solver.Constraint;
@@ -112,23 +102,11 @@ function [obj] = formulateProblemStructure(solver, funcs)
     obj.Constraint.nzJacRows = iRows';
     obj.Constraint.nzJacCols = jCols';
     obj.Constraint.nnzJac = length(iRows);
+    obj.Constraint = rmfield(obj.Constraint, 'LowerBound');
+    obj.Constraint = rmfield(obj.Constraint, 'UpperBound');
     obj.Constraint = rmfield(obj.Constraint, 'JacStructFuncs');
-    %     if iscolumn(obj.Constraint.nzJacRows)
-    %         obj.Constraint.nzJacRows = obj.Constraint.nzJacRows';
-    %     end
-    %     if iscolumn(obj.Constraint.nzJacCols)
-    %         obj.Constraint.nzJacCols = obj.Constraint.nzJacCols';
-    %     end
     if iscolumn(obj.Constraint.nzJacIndices)
         obj.Constraint.nzJacIndices = obj.Constraint.nzJacIndices';
-    end
-    obj.Constraint.LowerBound(obj.Constraint.LowerBound == -Inf) = -1e6;
-    if iscolumn(obj.Constraint.LowerBound)
-        obj.Constraint.LowerBound = obj.Constraint.LowerBound';
-    end
-    obj.Constraint.UpperBound(obj.Constraint.UpperBound == Inf) = 1e6;
-    if iscolumn(obj.Constraint.UpperBound)
-        obj.Constraint.UpperBound = obj.Constraint.UpperBound';
     end
     
     
