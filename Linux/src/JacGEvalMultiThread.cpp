@@ -68,7 +68,7 @@ frost::JacGEvalMultiThread_worker::JacGEvalMultiThread_worker(int nJOutConst, fr
 
 frost::JacGEvalMultiThread_worker::~JacGEvalMultiThread_worker()
 {
-  this->th->join();
+  th->join();
 
   delete []in;
   delete []out;
@@ -86,11 +86,11 @@ void frost::JacGEvalMultiThread_worker::Compute()
   while(true)
   {
     int i = monitor->getConstraint();
-    
-    const Number *x = monitor->getX();
 
     if (i < 0)
       break;
+    
+    const Number *x = monitor->getX();
 
     //if ((*document).Constraint.nzJacIndices[i].IsNull())
     //{
@@ -141,9 +141,7 @@ frost::MyMonitor::~MyMonitor()
   queue_available.notify_all();
 
   for (unsigned int i = 0; i < thread_obj.size(); i++)
-  {
     delete thread_obj[i];
-  }
 }
 
 void frost::MyMonitor::resetConstraints(int num_of_const, const Number *x)
@@ -220,6 +218,8 @@ void frost::MyMonitor::waitTillReady()
 
 const Number * frost::MyMonitor::getX()
 {
+  std::unique_lock<std::mutex> lk(lock);
+
   return x;
 }
 

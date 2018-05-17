@@ -59,9 +59,9 @@ int main(int argc, const char* argv[])
   //  (use a SmartPtr, not raw)
   frost::FROST_SOLVER* frost_nlp;
   if (param["threads"].as<int>() == 1)
-    frost_nlp = new  frost::FROST_SOLVER(new_document, x0, new frost::JacGEvalSingleThread(new_document));
+    frost_nlp = new frost::FROST_SOLVER(new_document, x0, new frost::JacGEvalSingleThread(new_document));
   else
-    frost_nlp = new  frost::FROST_SOLVER(new_document, x0, new frost::JacGEvalMultiThread(new_document, param["threads"].as<int>()));
+    frost_nlp = new frost::FROST_SOLVER(new_document, x0, new frost::JacGEvalMultiThread(new_document, param["threads"].as<int>()));
   
   SmartPtr<TNLP> nlp = frost_nlp;
   delete []x0;
@@ -117,13 +117,13 @@ int main(int argc, const char* argv[])
     exportSolution(frost_nlp, param["solution"].as<std::string>());
   }
 
-
   // As the SmartPtrs go out of scope, the reference count
   // will be decremented and the objects will automatically
   // be deleted.
 
-  return (int) status;
+  //delete frost_nlp;
 
+  return (int) status;
 }
 
 void getDocument(rapidjson::Document &document, const std::string &fileName)

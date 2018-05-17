@@ -82,7 +82,6 @@ namespace frost {
     Number *lambda;   // the Lagrangian multiplier lambda
     Number obj_value; // the objective function value
     Number *g;        // the constraints evaluation
-
   };
 }
 
