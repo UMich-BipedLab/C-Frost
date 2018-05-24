@@ -37,7 +37,7 @@ int main(int argc, const char* argv[])
   ("threads", "Number of threads (default=1)", cxxopts::value<int>()->default_value("1"));
   
   auto param = options.parse(argc, argv);
-  
+
   rapidjson::Document document;
   getDocument(document, param["data"].as<std::string>());
   rapidjson::Document bounds;
@@ -247,20 +247,6 @@ void updateData(rapidjson::Document &rapidDocument, frost::Document &document)
         else
             throw "null found";
     }
-    for (unsigned int i = 0; i < rapidDocument["Constraint"]["AuxData"].Size(); i++)
-    {
-        std::vector<double> v;
-        document.Constraint.AuxData.push_back(v);
-        if (rapidDocument["Constraint"]["AuxData"][i].IsArray())
-        {
-            for (unsigned int j = 0; j < rapidDocument["Constraint"]["AuxData"][i].Size(); j++)
-                document.Constraint.AuxData[i].push_back(rapidDocument["Constraint"]["AuxData"][i][j].GetDouble());
-        }
-        else if (rapidDocument["Constraint"]["AuxData"][i].IsNull() == false)
-        {
-            document.Constraint.AuxData[i].push_back(rapidDocument["Constraint"]["AuxData"][i].GetDouble());
-        }
-    }
     for (unsigned int i = 0; i < rapidDocument["Constraint"]["FuncIndices"].Size(); i++)
     {
         std::vector<int> v;
@@ -303,20 +289,6 @@ void updateData(rapidjson::Document &rapidDocument, frost::Document &document)
                 document.Objective.DepIndices[i].push_back(rapidDocument["Objective"]["DepIndices"][i][j].GetInt());
         else
             document.Objective.DepIndices[i].push_back(rapidDocument["Objective"]["DepIndices"][i].GetInt());
-    }
-    for (unsigned int i = 0; i < rapidDocument["Objective"]["AuxData"].Size(); i++)
-    {
-        std::vector<double> v;
-        document.Objective.AuxData.push_back(v);
-        if (rapidDocument["Objective"]["AuxData"][i].IsArray())
-        {
-            for (unsigned int j = 0; j < rapidDocument["Objective"]["AuxData"][i].Size(); j++)
-                document.Objective.AuxData[i].push_back(rapidDocument["Objective"]["AuxData"][i][j].GetDouble());
-        }
-        else if (rapidDocument["Objective"]["AuxData"][i].IsNull() == false)
-        {
-            document.Objective.AuxData[i].push_back(rapidDocument["Objective"]["AuxData"][i].GetDouble());
-        }
     }
     for (unsigned int i = 0; i < rapidDocument["Objective"]["FuncIndices"].Size(); i++)
     {
@@ -363,4 +335,34 @@ void updateBounds(rapidjson::Document &rapidDocument, frost::Document &document)
         document.Constraint.LowerBound.push_back(rapidDocument["Constraint"]["LowerBound"][i].GetDouble());
     for (unsigned int i = 0; i < rapidDocument["Constraint"]["UpperBound"].Size(); i++)
         document.Constraint.UpperBound.push_back(rapidDocument["Constraint"]["UpperBound"][i].GetDouble());
+    for (unsigned int i = 0; i < rapidDocument["Constraint"]["AuxData"].Size(); i++)
+    {
+        std::vector<double> v;
+        document.Constraint.AuxData.push_back(v);
+        if (rapidDocument["Constraint"]["AuxData"][i].IsArray())
+        {
+            for (unsigned int j = 0; j < rapidDocument["Constraint"]["AuxData"][i].Size(); j++)
+                document.Constraint.AuxData[i].push_back(rapidDocument["Constraint"]["AuxData"][i][j].GetDouble());
+        }
+        else if (rapidDocument["Constraint"]["AuxData"][i].IsNull() == false)
+        {
+            document.Constraint.AuxData[i].push_back(rapidDocument["Constraint"]["AuxData"][i].GetDouble());
+        }
+    }
+
+    // Copying Objective Data
+    for (unsigned int i = 0; i < rapidDocument["Objective"]["AuxData"].Size(); i++)
+    {
+        std::vector<double> v;
+        document.Objective.AuxData.push_back(v);
+        if (rapidDocument["Objective"]["AuxData"][i].IsArray())
+        {
+            for (unsigned int j = 0; j < rapidDocument["Objective"]["AuxData"][i].Size(); j++)
+                document.Objective.AuxData[i].push_back(rapidDocument["Objective"]["AuxData"][i][j].GetDouble());
+        }
+        else if (rapidDocument["Objective"]["AuxData"][i].IsNull() == false)
+        {
+            document.Objective.AuxData[i].push_back(rapidDocument["Objective"]["AuxData"][i].GetDouble());
+        }
+    }
 }

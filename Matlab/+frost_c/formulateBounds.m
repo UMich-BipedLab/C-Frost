@@ -33,4 +33,29 @@ function [obj] = formulateBounds(solver, funcs)
     if iscolumn(obj.Constraint.UpperBound)
         obj.Constraint.UpperBound = obj.Constraint.UpperBound';
     end
+    
+    obj.Constraint.AuxData = cell(1, solver.Constraint.numFuncs);
+    for i = 1:solver.Constraint.numFuncs
+        obj.Constraint.AuxData{i} = [];
+        for j = 1:length(solver.Constraint.AuxData{i})
+            row = solver.Constraint.AuxData{i}{j};
+            if iscolumn(row)
+                row = row';
+            end
+            obj.Constraint.AuxData{i} = [obj.Constraint.AuxData{i}, row];
+        end
+    end
+    
+    % Objective
+    obj.Objective.AuxData = cell(1, solver.Objective.numFuncs);
+    for i = 1:solver.Objective.numFuncs
+        obj.Objective.AuxData{i} = [];
+        for j = 1:length(solver.Objective.AuxData{i})
+            row = solver.Objective.AuxData{i}{j};
+            if iscolumn(row)
+                row = row';
+            end
+            obj.Objective.AuxData{i} = [obj.Objective.AuxData{i}, row];
+        end
+    end
 end
