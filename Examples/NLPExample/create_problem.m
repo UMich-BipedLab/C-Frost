@@ -12,15 +12,15 @@ if strcmp(FROST_PATH, 'INSERT_PATH_HERE')
     error('Please set the path to Frost in the variable FROST_PATH');
 end
 
+warning('off', 'MATLAB:MKDIR:DirectoryExists');
+
 addpath(FROST_PATH);
 frost_addpath;
 
 addpath(C_FROST_PATH);
 
 export_path = fullfile(cur, 'export/');
-if ~exist(export_path, 'dir')
-    mkdir(export_path);
-end
+mkdir(export_path);
 addpath(export_path);
 
 %% Creating Problem
@@ -107,21 +107,11 @@ if GENERATE_C
     include_dir = 'c_code/include';
     res_path = 'c_code/res';
     
-    if exist(c_code_path, 'dir')
-        mkdir(c_code_path);
-    end
-    if exist(src_path, 'dir')
-        mkdir(src_path);
-    end
-    if exist(src_gen_path, 'dir')
-        mkdir(src_gen_path);
-    end
-    if exist(include_dir, 'dir')
-        mkdir(include_dir);
-    end
-    if exist(res_path, 'dir')
-        mkdir(res_path);
-    end
+    mkdir(c_code_path);
+    mkdir(src_path);
+    mkdir(src_gen_path);
+    mkdir(include_dir);
+    mkdir(res_path);
     
     if COMPILE
         [funcs] = frost_c.getAllFuncs(solver);
@@ -143,5 +133,5 @@ end
 
 %% Optimize
 if RUN_MATLAB_FROST
-    [sol, info] = optimize(solver);
+    [sol, info] = optimize(solver); %#ok<UNRCH>
 end
