@@ -23,7 +23,7 @@ You can obtain the tools [here](https://software.intel.com/en-us/parallel-studio
   - On WSL, when selecting the pachages to install, remove any package that includes "Graphical User Interface".
   - For all other options, use default ones.
 - Once done installing, run `sudo ldconfig`.
-- In `~/.profile`, add the line
+- In `~/.profile`, add the line (adjusting to to whatever version of the toolset you're using):
   ```
   source /opt/intel/parallel_studio_xe_2018.3.051/psxevars.sh intel64 -platform linux
   ```
