@@ -75,3 +75,4 @@ You can obtain the tools [here](https://software.intel.com/en-us/parallel-studio
   ```
 - Then run `make` or `make -j4` for 4 threads (or however many you want).
 - Then, run `sudo env "PATH=$PATH" make install`
+- Then run `sudo ldconfig`
