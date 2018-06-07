@@ -99,7 +99,7 @@ extraOpts.derivative_test_perturbation = 1e-7;
 
 solver = IpoptApplication(nlp, extraOpts);
 
-%% Create files depending on solver
+%% (C-Frost specific code) Create c ipopt problem
 if GENERATE_C
     c_code_path = 'c_code';
     src_path = 'c_code/src';
