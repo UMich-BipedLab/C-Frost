@@ -7,7 +7,7 @@ Frost has been tested on native Ubuntu 16.04 and on Ubuntu 16.04 running on [WSL
 
 ## Installation
 
-C-Frost needs [Ipopt](https://projects.coin-or.org/Ipopt) to be installed on your system to run. You can follow the [official documentation](https://www.coin-or.org/Ipopt/documentation/node2.html), or you can follow the steps we've used [here](INSTALLATION.md).
+C-Frost needs [Ipopt](https://projects.coin-or.org/Ipopt) to be installed on your system to run. You can follow the [official documentation](https://www.coin-or.org/Ipopt/documentation/node2.html), but we recommend you follow the steps we've used [here](INSTALLATION.md).
 
 ## Descriptions
 
@@ -18,3 +18,7 @@ C-Frost needs [Ipopt](https://projects.coin-or.org/Ipopt) to be installed on you
 [Examples/](Examples) contains some examples, ranging from simple examples to more advanced usage of C-Frost.
 
 [ThirdPartyLicense/](ThirdPartyLicense) contains licenses and disclamers from third party code used.
+
+## Tutorial
+
+Once done installing all the prerequisits, we recommend going over [here](Examples/README.md) to go through the examples and how to use this tool.
