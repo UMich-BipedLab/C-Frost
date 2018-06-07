@@ -61,10 +61,10 @@ You can obtain the tools [here](https://software.intel.com/en-us/parallel-studio
   - Extract the folder
   - Rename the folder to `coinhsl/` and place it in `ThirdParty/HSL/coinhsl/`
 - Next, in the root folder of the Ipopt run:
-```
-mkdir build
-cd build
-```
+  ```
+  mkdir build
+  cd build
+  ```
 - If you're using the Intel compiler, run:
   ```
   ../configure CXX=icpc CC=icc F77=ifort --prefix=/usr/local/ ADD_CFLAGS=-fopenmp ADD_FFLAGS=-fopenmp ADD_CXXFLAGS=-fopenmp --with-blas="-L$MKLROOT/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lm"
