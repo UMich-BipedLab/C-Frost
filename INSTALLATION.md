@@ -12,7 +12,7 @@ Then restart when prompted.
 
 ## Required Packages
 
-- Install the following packages:
+Install the following packages:
 ```
 sudo apt-get install gcc g++ gfortran subversion patch wget cmake build-essential
 ```
