@@ -132,11 +132,10 @@ if GENERATE_C
         [funcs] = frost_c.getAllFuncs(solver);
         frost_c.createFunctionListHeader(funcs, src_path, include_dir);
         frost_c.createIncludeHeader(funcs, include_dir);
+        save('function_list.mat', 'funcs');
         
         frost_c.createConstraints(nlp,[],[],src_gen_path, include_dir);
         frost_c.createObjectives(nlp,[],[],src_gen_path, include_dir);
-        
-        save('function_list.mat', 'funcs');
     end
     load('function_list.mat', 'funcs');
     frost_c.createDataFile(solver, funcs, res_path, 'data');

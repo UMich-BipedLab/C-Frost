@@ -15,7 +15,7 @@ C-Frost needs [Ipopt](https://projects.coin-or.org/Ipopt) to be installed on you
 
 [Matlab/](Matlab) contains Matlab code used to create C++ files from your Frost problem on Matlab.
 
-[Examples/](Examples) contains some examples, ranging from simple examples to more advanced usage of C-Frost.
+[Examples/](Examples) contains some examples including explanation and a small walkthrough of the code.
 
 [ThirdPartyLicense/](ThirdPartyLicense) contains licenses and disclamers from third party code used.
 
