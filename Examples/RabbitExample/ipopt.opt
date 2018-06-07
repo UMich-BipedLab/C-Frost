@@ -1,0 +1,9 @@
+# This is a comment
+
+hessian_approximation limited-memory
+max_iter 500
+tol 1e-7
+mu_strategy adaptive
+output_file "ipopt.out"
+linear_solver "ma57"
+limited_memory_update_type "bfgs"
