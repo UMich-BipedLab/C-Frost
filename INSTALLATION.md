@@ -17,7 +17,7 @@ Install the following packages:
 sudo apt-get install gcc g++ gfortran subversion patch wget cmake build-essential
 ```
 
-## *OPTIONAL*: Install Intel Parallel Studio XE for Linux
+## *(OPTIONAL)* Install Intel Parallel Studio XE for Linux
 
 We've noticed significant speed improvements when using this framework to build Ipopt.
 
@@ -76,3 +76,7 @@ You can obtain the tools [here](https://software.intel.com/en-us/parallel-studio
 - Then run `make` or `make -j4` for 4 threads (or however many you want).
 - Then, run `sudo env "PATH=$PATH" make install`
 - Then run `sudo ldconfig`
+
+## Install JSONlab
+
+Go [here](https://www.mathworks.com/matlabcentral/fileexchange/33381-jsonlab--a-toolbox-to-encode-decode-json-files) to isntall JSONlab on for Matlab.
