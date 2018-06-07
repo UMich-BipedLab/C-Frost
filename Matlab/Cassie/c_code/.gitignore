@@ -1,8 +1,0 @@
-build/
-src/
-include/
-export/
-res/
-program
-*.json
-*.out
