@@ -37,3 +37,41 @@ You can obtain the tools [here](https://software.intel.com/en-us/parallel-studio
 - Either restart the bash or run `sudo ~/.profile` to continue.
 
 ## Install Ipopt
+
+- We'll download Ipopt:
+  ```
+  svn co https://projects.coin-or.org/svn/Ipopt/stable/3.12 CoinIpopt
+  ```
+- Next, we'll download third party licenses. From within the downloaded folder, run:
+  ```
+  cd ThirdParty/ASL
+  ./get.ASL
+  cd ../Blas
+  ./get.Blas
+  cd ../Lapack
+  ./get.Lapack
+  cd ../Metis
+  ./get.Metis
+  cd ../Mumps
+  ./get.Mumps
+  cd ../../
+  ```
+- Next, aquire [HSL](http://www.hsl.rl.ac.uk/ipopt/).
+  - Download the source code for the Linux version.
+  - Extract the folder
+  - Rename the folder to `coinhsl/` and place it in `ThirdParty/HSL/coinhsl/`
+- Next, in the root folder of the Ipopt run:
+```
+mkdir build
+cd build
+```
+- If you're using the Intel compiler, run:
+  ```
+  ../configure CXX=icpc CC=icc F77=ifort --prefix=/usr/local/ ADD_CFLAGS=-fopenmp ADD_FFLAGS=-fopenmp ADD_CXXFLAGS=-fopenmp --with-blas="-L$MKLROOT/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lm"
+  ```
+- Otherwise, run:
+  ```
+  ../configure
+  ```
+- Then run `make` or `make -j4` for 4 threads (or however many you want).
+- Then, run `sudo env "PATH=$PATH" make install`
