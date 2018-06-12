@@ -34,7 +34,7 @@ You can obtain the tools [here](https://software.intel.com/en-us/parallel-studio
   ```
   source /opt/intel/parallel_studio_xe_2018.3.051/psxevars.sh intel64 -platform linux
   ```
-- Either restart the bash or run `sudo ~/.profile` to continue.
+- Either restart the bash or run `source ~/.profile` to continue.
 
 ## Install Ipopt
 
