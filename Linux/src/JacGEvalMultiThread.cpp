@@ -99,15 +99,15 @@ void frost::JacGEvalMultiThread_worker::Compute()
     //}
 
     int fIdx = (*document).Constraint.JacFuncs[i] - 1;
-    int numDep = (*document).Constraint.DepIndices[i].size();
-    for (int j = 0; j < numDep; j++)
+    unsigned long int numDep = (*document).Constraint.DepIndices[i].size();
+    for (unsigned long int j = 0; j < numDep; j++)
     {
       in[j] = x[(*document).Constraint.DepIndices[i][j] - 1];
     }
 
     //std::cout<<"b"<<std::endl;
-    int numAux = (*document).Constraint.AuxData[i].size();
-    for (int j = 0; j < numAux; j++)
+    unsigned long int numAux = (*document).Constraint.AuxData[i].size();
+    for (unsigned long int j = 0; j < numAux; j++)
     {
       in[j + numDep] = (*document).Constraint.AuxData[i][j];
     }
@@ -188,8 +188,8 @@ void frost::MyMonitor::updateValues(Number *out, int i)
 
   if (i >= 0)
   {
-    int numConst = (*document).Constraint.nzJacIndices[i].size();
-    for (int j = 0; j < numConst; j++)
+    unsigned long int numConst = (*document).Constraint.nzJacIndices[i].size();
+    for (unsigned long int j = 0; j < numConst; j++)
     {
       values[(*document).Constraint.nzJacIndices[i][j] - 1] += out[j];
     }

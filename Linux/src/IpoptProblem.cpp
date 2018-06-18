@@ -189,22 +189,22 @@ bool frost::FROST_SOLVER::eval_g(Index n, const Number* x, bool new_x, Index m, 
   for (int i = 0; i < nConst; i++)
   {
     int fIdx = (*document).Constraint.Funcs[i] - 1;
-    int numDep = (*document).Constraint.DepIndices[i].size();
-    for (int j = 0; j < numDep; j++)
+    unsigned long int numDep = (*document).Constraint.DepIndices[i].size();
+    for (unsigned long int j = 0; j < numDep; j++)
     {
       in[j] = x[(*document).Constraint.DepIndices[i][j] - 1];
     }
 
-    int numAux = (*document).Constraint.AuxData[i].size();
-    for (int j = 0; j < numAux; j++)
+    unsigned long int numAux = (*document).Constraint.AuxData[i].size();
+    for (unsigned long int j = 0; j < numAux; j++)
     {
       in[j + numDep] = (*document).Constraint.AuxData[i][j];
     }
 
     frost::functions[fIdx](out, in);
 
-    int numConst = (*document).Constraint.FuncIndices[i].size();
-    for (int j = 0; j < numConst; j++)
+    unsigned long int numConst = (*document).Constraint.FuncIndices[i].size();
+    for (unsigned long int j = 0; j < numConst; j++)
     {
       g[(*document).Constraint.FuncIndices[i][j] - 1] += out[j];
     }
@@ -224,24 +224,24 @@ bool frost::FROST_SOLVER::eval_f(Index n, const Number* x, bool new_x, Number& o
   for (int i = 0; i < nConst; i++)
   {
     int fIdx = (*document).Objective.Funcs[i] - 1;
-    int numDep = 0;
+    unsigned long int numDep = 0;
     numDep = (*document).Objective.DepIndices[i].size();
-    for (int j = 0; j < numDep; j++)
+    for (unsigned long int j = 0; j < numDep; j++)
     {
       in[j] = x[(*document).Objective.DepIndices[i][j] - 1];
     }
 
-    int numAux = (*document).Objective.AuxData[i].size();
-    for (int j = 0; j < numAux; j++)
+    unsigned long int numAux = (*document).Objective.AuxData[i].size();
+    for (unsigned long int j = 0; j < numAux; j++)
     {
       in[j + numDep] = (*document).Objective.AuxData[i][j];
     }
 
     frost::functions[fIdx](out, in);
 
-    int numConst = 0;
+    unsigned long int numConst = 0;
     numConst = (*document).Objective.FuncIndices[i].size();
-    for (int j = 0; j < numConst; j++)
+    for (unsigned long int j = 0; j < numConst; j++)
     {
       obj_value += out[j];
     }
@@ -287,23 +287,23 @@ bool frost::FROST_SOLVER::eval_grad_f(Index n, const Number* x, bool new_x, Numb
   for (int i = 0; i < nConst; i++)
   {
     int fIdx = (*document).Objective.JacFuncs[i] - 1;
-    int numDep = 0;
+    unsigned long int numDep = 0;
     numDep = (*document).Objective.DepIndices[i].size();
-    for (int j = 0; j < numDep; j++)
+    for (unsigned long int j = 0; j < numDep; j++)
     {
       in[j] = x[(*document).Objective.DepIndices[i][j] - 1];
     }
 
-    int numAux = (*document).Objective.AuxData[i].size();
-    for (int j = 0; j < numAux; j++)
+    unsigned long int numAux = (*document).Objective.AuxData[i].size();
+    for (unsigned long int j = 0; j < numAux; j++)
     {
       in[j + numDep] = (*document).Objective.AuxData[i][j];
     }
 
     frost::functions[fIdx](out, in);
 
-    int numConst = (*document).Objective.nzJacIndices[i].size();
-    for (int j = 0; j < numConst; j++)
+    unsigned long int numConst = (*document).Objective.nzJacIndices[i].size();
+    for (unsigned long int j = 0; j < numConst; j++)
     {
       int flIdx = (*document).Objective.nzJacIndices[i][j] - 1;
       int index = (*document).Objective.nzJacCols[flIdx] - 1;

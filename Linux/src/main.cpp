@@ -49,7 +49,11 @@ int main(int argc, const char* argv[])
 
   rapidjson::Document init_document;
   getDocument(init_document, param["initial"].as<std::string>());
+  
+  if (init_document.IsArray() == false)
+    throw std::runtime_error("Wrong init file (or file didn't exist). JSON file should be an array!");
   assert(init_document.IsArray());
+  
   double *x0 = new double[init_document.Size()];
 
   for (unsigned int i=0; i<init_document.Size(); i++)
@@ -84,6 +88,10 @@ int main(int argc, const char* argv[])
   // app->Options()->SetStringValue("limited_memory_update_type", "bfgs");
   // The following overwrites the default name (ipopt.opt) of the
   // options file
+  ifstream opt_file(param["options"].as<std::string>());
+  if (opt_file.good() == false)
+    throw std::runtime_error("Options file does not exist or can't be read!");
+  opt_file.close();
   app->Options()->SetStringValue("option_file_name", param["options"].as<std::string>());
 
   // Initialize the IpoptApplication and process the options
@@ -219,6 +227,17 @@ void exportSolution(const frost::FROST_SOLVER *solver, const std::string &fileNa
 
 void updateData(rapidjson::Document &rapidDocument, frost::Document &document)
 {
+    if (rapidDocument.IsObject() == false)
+        throw std::runtime_error("Wrong data file (or file didn't exist). JSON file should be an object!");
+    if (rapidDocument.HasMember("Constraint") == false)
+        throw std::runtime_error("Wrong data file. Object should contain field 'Constraint'!");
+    if (rapidDocument.HasMember("Objective") == false)
+        throw std::runtime_error("Wrong data file. Object should contain field 'Objective'!");
+    if (rapidDocument.HasMember("Variable") == false)
+        throw std::runtime_error("Wrong data file. Object should contain field 'Variable'!");
+    if (rapidDocument.HasMember("Options") == false)
+        throw std::runtime_error("Wrong data file. Object should contain field 'Options'!");
+    
     assert(rapidDocument.IsObject());
     assert(rapidDocument.HasMember("Constraint"));
     assert(rapidDocument.HasMember("Objective"));
@@ -245,7 +264,7 @@ void updateData(rapidjson::Document &rapidDocument, frost::Document &document)
         else if (rapidDocument["Constraint"]["DepIndices"][i].IsNull() == false)
             document.Constraint.DepIndices[i].push_back(rapidDocument["Constraint"]["DepIndices"][i].GetInt());
         else
-            throw "null found";
+            throw std::runtime_error("null found in data file");
     }
     for (unsigned int i = 0; i < rapidDocument["Constraint"]["FuncIndices"].Size(); i++)
     {
@@ -315,13 +334,24 @@ void updateData(rapidjson::Document &rapidDocument, frost::Document &document)
             document.Objective.nzJacIndices[i].push_back(rapidDocument["Objective"]["nzJacIndices"][i].GetInt());
     }
     document.Objective.Dimension = rapidDocument["Objective"]["Dimension"].GetInt();
+    
 }
 
 
 void updateBounds(rapidjson::Document &rapidDocument, frost::Document &document)
 {
+    if (rapidDocument.IsObject() == false)
+        throw std::runtime_error("Wrong bounds file (or file didn't exist). JSON file should be an object!");
+    if (rapidDocument.HasMember("Constraint") == false)
+        throw std::runtime_error("Wrong bounds file. Object should contain field 'Constraint'!");
+    if (rapidDocument.HasMember("Objective") == false)
+        throw std::runtime_error("Wrong bounds file. Object should contain field 'Objective'!");
+    if (rapidDocument.HasMember("Variable") == false)
+        throw std::runtime_error("Wrong bounds file. Object should contain field 'Variable'!");
+
     assert(rapidDocument.IsObject());
     assert(rapidDocument.HasMember("Constraint"));
+    assert(rapidDocument.HasMember("Objective"));
     assert(rapidDocument.HasMember("Variable"));
 
     // Copying Variable data

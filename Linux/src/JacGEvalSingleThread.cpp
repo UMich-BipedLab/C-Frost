@@ -50,23 +50,23 @@ bool frost::JacGEvalSingleThread::eval_jac_g(Index n, const Number* x, bool new_
   for (int i = 0; i < nConst; i++)
   {
     int fIdx = (*document).Constraint.JacFuncs[i] - 1;
-    int numDep = (*document).Constraint.DepIndices[i].size();
-    for (int j = 0; j < numDep; j++)
+    unsigned long int numDep = (*document).Constraint.DepIndices[i].size();
+    for (unsigned long int j = 0; j < numDep; j++)
     {
       in[j] = x[(*document).Constraint.DepIndices[i][j] - 1];
     }
 
-    int numAux = (*document).Constraint.AuxData[i].size();
-    for (int j = 0; j < numAux; j++)
+    unsigned long int numAux = (*document).Constraint.AuxData[i].size();
+    for (unsigned long int j = 0; j < numAux; j++)
     {
       in[j + numDep] = (*document).Constraint.AuxData[i][j];
     }
 
     frost::functions[fIdx](out, in);
 
-    int numConst = 0;
+    unsigned long int numConst = 0;
     numConst = (*document).Constraint.nzJacIndices[i].size();
-    for (int j = 0; j < numConst; j++)
+    for (unsigned long int j = 0; j < numConst; j++)
     {
       values[(*document).Constraint.nzJacIndices[i][j] - 1] += out[j];
     }
