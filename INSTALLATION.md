@@ -26,7 +26,7 @@ You can obtain the tools [here](https://software.intel.com/en-us/parallel-studio
 - Download the full package. 
 - If on WSL, copy the compressed file to your linux home directory `~/`.
 - Extract the file.
-- Browse into the extracted folder and run `sudo install.sh`.
+- Browse into the extracted folder and run `sudo ./install.sh`.
   - On WSL, when selecting the pachages to install, remove any package that includes "Graphical User Interface".
   - For all other options, use default ones.
 - Once done installing, run `sudo ldconfig`.
