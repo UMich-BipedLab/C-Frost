@@ -17,24 +17,19 @@ Install the following packages:
 sudo apt-get install gcc g++ gfortran subversion patch wget cmake build-essential
 ```
 
-## *(OPTIONAL)* Install Intel Parallel Studio XE for Linux
+## *(OPTIONAL)* Install Intel Math Kernal Library for Linux
 
-We've noticed significant speed improvements when using this framework to build Ipopt.
+Using Intel MKL results in better performance.
+Instructions on installing it is [here](https://software.intel.com/en-us/articles/installing-intel-free-libs-and-python-apt-repo).
 
-You can obtain the tools [here](https://software.intel.com/en-us/parallel-studio-xe). Then:
+Once you're done with the _Setting up the Repository_ steps, install the `intel-mkl` package.
 
-- Download the full package. 
-- If on WSL, copy the compressed file to your linux home directory `~/`.
-- Extract the file.
-- Browse into the extracted folder and run `sudo ./install.sh`.
-  - On WSL, when selecting the pachages to install, remove any package that includes "Graphical User Interface".
-  - For all other options, use default ones.
-- Once done installing, run `sudo ldconfig`.
-- In `~/.profile`, add the line (adjusting to to whatever version of the toolset you're using):
-  ```
-  source /opt/intel/parallel_studio_xe_2018.3.051/psxevars.sh intel64 -platform linux
-  ```
-- Either restart the bash or run `source ~/.profile` to continue.
+Then, once done installing, in `~/.profile`, add the line (adjusting to to whatever version of the toolset you're using):
+```
+source /opt/intel/parallel_studio_xe_2018.3.051/psxevars.sh intel64 -platform linux
+```
+
+Finally either restart or run `source ~/.profile` to continue.
 
 ## Install Ipopt
 
@@ -56,10 +51,11 @@ You can obtain the tools [here](https://software.intel.com/en-us/parallel-studio
   ./get.Mumps
   cd ../../
   ```
-- Next, aquire [HSL](http://www.hsl.rl.ac.uk/ipopt/).
+- *(OPTIONAL)* Next, aquire [HSL](http://www.hsl.rl.ac.uk/ipopt/).
   - Download the source code for the Linux version.
   - Extract the folder
-  - Rename the folder to `coinhsl/` and place it in `ThirdParty/HSL/coinhsl/`
+  - Rename the folder to `coinhsl/` and place such that it looks like `ThirdParty/HSL/coinhsl/`
+  - _HSL is used in a particular linear solver that we're found to work well. If you cannot get HSL, you'll have to change the solver in our examples._
 - Next, in the root folder of the Ipopt run:
   ```
   mkdir build
@@ -67,15 +63,15 @@ You can obtain the tools [here](https://software.intel.com/en-us/parallel-studio
   ```
 - If you're using the Intel compiler, run:
   ```
-  ../configure CXX=icpc CC=icc F77=ifort --prefix=/usr/local/ ADD_CFLAGS=-fopenmp ADD_FFLAGS=-fopenmp ADD_CXXFLAGS=-fopenmp --with-blas="-L$MKLROOT/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lm"
+  ../configure --prefix=/usr/local/ ADD_CFLAGS=-fopenmp ADD_FFLAGS=-fopenmp ADD_CXXFLAGS=-fopenmp --with-blas="-L$MKLROOT/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lm"
   ```
 - Otherwise, run:
   ```
   ../configure
   ```
 - Then run `make` or `make -j4` for 4 threads (or however many you want).
-- Then, run `sudo env "PATH=$PATH" make install`
-- Then run `sudo ldconfig`
+- Then, run `sudo make install`
+- Then, run `sudo ldconfig`
 
 ## Install JSONlab
 
