@@ -22,3 +22,7 @@ C-Frost needs [Ipopt](https://projects.coin-or.org/Ipopt) to be installed on you
 ## Tutorial
 
 Once done installing all the prerequisits, we recommend going over [here](Examples/README.md) to go through the examples and how to use this tool.
+
+## Example
+
+[Cassie Blue](https://www.biped.solutions/) Gait Library Optimization: [here](https://github.com/UMich-BipedLab/Cassie_CFROST)
