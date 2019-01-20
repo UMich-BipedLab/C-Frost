@@ -45,6 +45,9 @@ INLINE double Tanh(double x) { return tanh(x); }
 #define Pi 3.14159265358979323846264
 #define Degree 0.01745329251994329576924
 
+INLINE double Sec(double x) { return 1/cos(x); }
+INLINE double Csc(double x) { return 1/sin(x); }
+
 /*
  * Sub functions
  */
